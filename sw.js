@@ -1,214 +1,187 @@
-// ========================================
-// BUSRADAR PH
-// SERVICE WORKER
-// ========================================
-
-const CACHE_NAME = "busradar-ph-v1";
-
+const CACHE_NAME = "busradar-ph-v2";
 
 const FILES_TO_CACHE = [
-
     "./",
-
     "./index.html",
-
     "./style.css",
-
     "./app.js",
-
     "./manifest.json",
-
     "./icon.svg"
-
 ];
 
 
-// ========================================
-// INSTALL
-// ========================================
+/* =========================================
+   INSTALL
+   ========================================= */
 
-self.addEventListener(
-    "install",
-    event => {
+self.addEventListener("install", function (event) {
 
-        console.log(
-            "BusRadar Service Worker installing..."
-        );
+    console.log(
+        "BusRadar PH Service Worker installing..."
+    );
 
 
-        event.waitUntil(
+    event.waitUntil(
 
-            caches
-                .open(CACHE_NAME)
-                .then(cache => {
+        caches
+            .open(CACHE_NAME)
+            .then(function (cache) {
 
-                    return cache.addAll(
-                        FILES_TO_CACHE
-                    );
+                return cache.addAll(
+                    FILES_TO_CACHE
+                );
 
-                })
+            })
 
-        );
+    );
 
 
-        self.skipWaiting();
+    self.skipWaiting();
+
+});
+
+
+/* =========================================
+   ACTIVATE
+   ========================================= */
+
+self.addEventListener("activate", function (event) {
+
+    console.log(
+        "BusRadar PH Service Worker activated."
+    );
+
+
+    event.waitUntil(
+
+        caches
+            .keys()
+            .then(function (cacheNames) {
+
+                return Promise.all(
+
+                    cacheNames
+                        .filter(function (cacheName) {
+
+                            return (
+                                cacheName !==
+                                CACHE_NAME
+                            );
+
+                        })
+                        .map(function (cacheName) {
+
+                            return caches.delete(
+                                cacheName
+                            );
+
+                        })
+
+                );
+
+            })
+            .then(function () {
+
+                return self.clients.claim();
+
+            })
+
+    );
+
+});
+
+
+/* =========================================
+   FETCH
+   ========================================= */
+
+self.addEventListener("fetch", function (event) {
+
+    const request =
+        event.request;
+
+
+    /*
+       Do not interfere with
+       external Leaflet and map requests.
+    */
+
+    if (
+        request.url.includes(
+            "unpkg.com"
+        ) ||
+        request.url.includes(
+            "openstreetmap.org"
+        )
+    ) {
+
+        return;
 
     }
-);
 
 
-// ========================================
-// ACTIVATE
-// ========================================
+    /*
+       App files:
+       Network first, then cache.
+    */
 
-self.addEventListener(
-    "activate",
-    event => {
+    event.respondWith(
 
-        console.log(
-            "BusRadar Service Worker activated."
-        );
+        fetch(request)
+            .then(function (response) {
 
+                if (
+                    response &&
+                    response.status === 200
+                ) {
 
-        event.waitUntil(
-
-            caches
-                .keys()
-                .then(cacheNames => {
-
-                    return Promise.all(
-
-                        cacheNames
-                            .filter(
-                                cacheName =>
-                                    cacheName !==
-                                    CACHE_NAME
-                            )
-                            .map(
-                                cacheName =>
-                                    caches.delete(
-                                        cacheName
-                                    )
-                            )
-
-                    );
-
-                })
-
-        );
+                    const responseClone =
+                        response.clone();
 
 
-        self.clients.claim();
+                    caches
+                        .open(CACHE_NAME)
+                        .then(function (cache) {
 
-    }
-);
-
-
-// ========================================
-// FETCH
-// ========================================
-
-self.addEventListener(
-    "fetch",
-    event => {
-
-        /*
-            IMPORTANT:
-
-            OpenStreetMap map tiles and
-            Leaflet CDN files are NOT
-            cached here.
-
-            This means the actual map
-            may not be visible when
-            completely offline.
-
-            The app itself and cached
-            bus information can still
-            work offline.
-        */
-
-
-        const request =
-            event.request;
-
-
-        // Ignore external map/CDN requests
-
-        if (
-
-            request.url.includes(
-                "tile.openstreetmap.org"
-            )
-
-            ||
-
-            request.url.includes(
-                "unpkg.com"
-            )
-
-        ) {
-
-            return;
-
-        }
-
-
-        // Cache first
-
-        event.respondWith(
-
-            caches
-                .match(request)
-                .then(cachedResponse => {
-
-                    if (
-                        cachedResponse
-                    ) {
-
-                        return cachedResponse;
-
-                    }
-
-
-                    // If not cached,
-                    // try internet
-
-                    return fetch(request)
-
-                        .then(
-                            networkResponse => {
-
-                                return networkResponse;
-
-                            }
-                        )
-
-                        .catch(() => {
-
-                            /*
-                                If internet is
-                                unavailable,
-                                return index.html
-                                for navigation.
-                            */
-
-                            if (
-                                request.mode ===
-                                "navigate"
-                            ) {
-
-                                return caches.match(
-                                    "./index.html"
-                                );
-
-                            }
+                            cache.put(
+                                request,
+                                responseClone
+                            );
 
                         });
 
-                })
+                }
 
-        );
 
-    }
-);
+                return response;
+
+            })
+            .catch(function () {
+
+                return caches
+                    .match(request)
+                    .then(function (cached) {
+
+                        if (cached) {
+                            return cached;
+                        }
+
+
+                        if (
+                            request.mode ===
+                            "navigate"
+                        ) {
+
+                            return caches.match(
+                                "./index.html"
+                            );
+
+                        }
+
+                    });
+
+            })
+
+    );
+
+});

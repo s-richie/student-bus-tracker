@@ -1,14 +1,9 @@
-/* =========================================================
-   BUSRADAR PH
-   Main stylesheet
-   ========================================================= */
-
 :root {
     --bg: #07101f;
     --bg-soft: #0b1628;
     --card: #0e1b2f;
     --card-light: #12233b;
-    --border: rgba(255, 255, 255, 0.09);
+    --border: rgba(255,255,255,.09);
 
     --text: #f5f8ff;
     --text-soft: #aab8cc;
@@ -16,7 +11,7 @@
 
     --primary: #3188ff;
     --primary-dark: #1766d1;
-    --primary-soft: rgba(49, 136, 255, 0.14);
+    --primary-soft: rgba(49,136,255,.14);
 
     --success: #36d98b;
     --warning: #ffbf4d;
@@ -27,12 +22,9 @@
     --radius-lg: 24px;
 
     --shadow:
-        0 20px 60px rgba(0, 0, 0, 0.28);
+        0 20px 60px rgba(0,0,0,.28);
 }
 
-/* =========================================================
-   RESET
-   ========================================================= */
 
 * {
     margin: 0;
@@ -40,9 +32,11 @@
     box-sizing: border-box;
 }
 
+
 html {
     scroll-behavior: smooth;
 }
+
 
 body {
     min-height: 100vh;
@@ -57,12 +51,12 @@ body {
     background:
         radial-gradient(
             circle at 10% 0%,
-            rgba(49, 136, 255, 0.11),
+            rgba(49,136,255,.11),
             transparent 30%
         ),
         radial-gradient(
             circle at 90% 20%,
-            rgba(49, 136, 255, 0.07),
+            rgba(49,136,255,.07),
             transparent 25%
         ),
         var(--bg);
@@ -73,14 +67,18 @@ body {
     overflow-x: hidden;
 }
 
+
 button,
 select {
     font: inherit;
 }
 
+
 button {
     border: 0;
+    -webkit-tap-highlight-color: transparent;
 }
+
 
 button:focus-visible,
 select:focus-visible {
@@ -88,20 +86,18 @@ select:focus-visible {
     outline-offset: 3px;
 }
 
-::selection {
-    background: rgba(49, 136, 255, 0.35);
-    color: white;
+
+button:disabled {
+    opacity: .6;
+    cursor: wait;
 }
 
-/* =========================================================
-   TOP BAR
-   ========================================================= */
 
 .topbar {
     width: 100%;
     max-width: 1240px;
 
-    margin: 0 auto;
+    margin: auto;
     padding: 24px 28px;
 
     display: flex;
@@ -111,11 +107,13 @@ select:focus-visible {
     gap: 20px;
 }
 
+
 .brand {
     display: flex;
     align-items: center;
     gap: 13px;
 }
+
 
 .brand-icon {
     width: 48px;
@@ -129,37 +127,35 @@ select:focus-visible {
     background:
         linear-gradient(
             135deg,
-            rgba(49, 136, 255, 0.25),
-            rgba(49, 136, 255, 0.08)
+            rgba(49,136,255,.25),
+            rgba(49,136,255,.08)
         );
 
-    border: 1px solid rgba(49, 136, 255, 0.25);
+    border: 1px solid rgba(49,136,255,.25);
 
     font-size: 24px;
-
-    box-shadow:
-        0 8px 25px rgba(0, 0, 0, 0.2);
 }
+
 
 .brand h1 {
     font-size: 19px;
     font-weight: 800;
-    letter-spacing: -0.4px;
 }
+
 
 .brand h1 span {
     color: var(--primary);
 }
 
-.brand p {
-    margin-top: 1px;
 
+.brand p {
     font-size: 11px;
     color: var(--text-muted);
 
     text-transform: uppercase;
     letter-spacing: 1.2px;
 }
+
 
 .connection-status {
     display: inline-flex;
@@ -171,13 +167,14 @@ select:focus-visible {
     border: 1px solid var(--border);
     border-radius: 999px;
 
-    background: rgba(255, 255, 255, 0.035);
+    background: rgba(255,255,255,.035);
 
     color: var(--text-soft);
 
     font-size: 12px;
     font-weight: 600;
 }
+
 
 .status-dot {
     width: 8px;
@@ -186,81 +183,60 @@ select:focus-visible {
     border-radius: 50%;
 
     background: var(--warning);
-
-    box-shadow:
-        0 0 0 4px rgba(255, 191, 77, 0.1);
-
-    animation: pulseStatus 2s infinite;
 }
+
 
 .connection-status.online .status-dot {
     background: var(--success);
-
-    box-shadow:
-        0 0 0 4px rgba(54, 217, 139, 0.1);
 }
+
 
 .connection-status.offline .status-dot {
     background: var(--danger);
-
-    box-shadow:
-        0 0 0 4px rgba(255, 104, 117, 0.1);
 }
 
-@keyframes pulseStatus {
-    0%,
-    100% {
-        opacity: 1;
-    }
-
-    50% {
-        opacity: 0.45;
-    }
-}
-
-/* =========================================================
-   MAIN CONTAINER
-   ========================================================= */
 
 .container {
     width: 100%;
     max-width: 1184px;
 
-    margin: 0 auto;
-    padding: 10px 28px 70px;
+    margin: auto;
+
+    padding:
+        10px 28px 70px;
 }
 
-/* =========================================================
-   HERO
-   ========================================================= */
 
 .hero {
     min-height: 470px;
 
     display: grid;
-    grid-template-columns: 1.1fr 0.9fr;
+    grid-template-columns: 1.1fr .9fr;
 
     align-items: center;
 
     gap: 50px;
 
-    padding: 55px 0 65px;
+    padding:
+        55px 0 65px;
 }
+
 
 .hero-text {
     max-width: 620px;
 }
 
+
 .eyebrow {
     display: inline-flex;
-    align-items: center;
 
     padding: 7px 11px;
 
     border-radius: 999px;
 
     background: var(--primary-soft);
-    border: 1px solid rgba(49, 136, 255, 0.18);
+
+    border: 1px solid rgba(49,136,255,.18);
 
     color: #7fb6ff;
 
@@ -270,20 +246,24 @@ select:focus-visible {
     letter-spacing: 1.4px;
 }
 
+
 .hero h2 {
     margin-top: 18px;
 
-    font-size: clamp(45px, 6vw, 74px);
+    font-size: clamp(45px,6vw,74px);
 
-    line-height: 0.98;
+    line-height: .98;
 
     letter-spacing: -4px;
+
     font-weight: 850;
 }
+
 
 .hero h2 span {
     color: var(--primary);
 }
+
 
 .hero-text > p {
     max-width: 550px;
@@ -293,11 +273,14 @@ select:focus-visible {
     color: var(--text-soft);
 
     font-size: 16px;
+
     line-height: 1.7;
 }
 
+
 .hero-buttons {
     display: flex;
+
     align-items: center;
 
     gap: 12px;
@@ -305,17 +288,30 @@ select:focus-visible {
     margin-top: 28px;
 }
 
+
 .primary-btn,
 .secondary-btn,
-.small-btn {
+.small-btn,
+.operator-btn {
+    position: relative;
+
     cursor: pointer;
 
+    pointer-events: auto;
+
+    user-select: none;
+
+    touch-action: manipulation;
+
+    z-index: 100;
+
     transition:
-        transform 0.2s ease,
-        background 0.2s ease,
-        border-color 0.2s ease,
-        box-shadow 0.2s ease;
+        transform .2s ease,
+        background .2s ease,
+        border-color .2s ease,
+        box-shadow .2s ease;
 }
+
 
 .primary-btn {
     min-height: 48px;
@@ -334,17 +330,13 @@ select:focus-visible {
     color: white;
 
     font-weight: 750;
-
-    box-shadow:
-        0 10px 25px rgba(49, 136, 255, 0.18);
 }
+
 
 .primary-btn:hover {
     transform: translateY(-2px);
-
-    box-shadow:
-        0 14px 30px rgba(49, 136, 255, 0.28);
 }
+
 
 .secondary-btn {
     min-height: 48px;
@@ -353,7 +345,7 @@ select:focus-visible {
 
     border-radius: 12px;
 
-    background: rgba(255, 255, 255, 0.045);
+    background: rgba(255,255,255,.045);
 
     border: 1px solid var(--border);
 
@@ -362,20 +354,13 @@ select:focus-visible {
     font-weight: 700;
 }
 
-.secondary-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
 
-    border-color: rgba(255, 255, 255, 0.16);
+.secondary-btn:hover {
+    background: rgba(255,255,255,.08);
 
     transform: translateY(-2px);
 }
 
-.primary-btn:active,
-.secondary-btn:active,
-.small-btn:active,
-.operator-btn:active {
-    transform: translateY(0);
-}
 
 .location-message {
     min-height: 20px;
@@ -387,9 +372,6 @@ select:focus-visible {
     font-size: 12px !important;
 }
 
-/* =========================================================
-   HERO RADAR
-   ========================================================= */
 
 .hero-card {
     min-height: 380px;
@@ -400,8 +382,10 @@ select:focus-visible {
     position: relative;
 }
 
+
 .radar-circle {
-    width: min(360px, 75vw);
+    width: min(360px,75vw);
+
     aspect-ratio: 1;
 
     position: relative;
@@ -414,40 +398,41 @@ select:focus-visible {
     background:
         radial-gradient(
             circle,
-            rgba(49, 136, 255, 0.15) 0%,
-            rgba(49, 136, 255, 0.05) 38%,
+            rgba(49,136,255,.15),
+            rgba(49,136,255,.05) 38%,
             transparent 65%
         );
 
-    border: 1px solid rgba(49, 136, 255, 0.15);
-
-    box-shadow:
-        inset 0 0 80px rgba(49, 136, 255, 0.06),
-        0 0 100px rgba(49, 136, 255, 0.06);
+    border: 1px solid rgba(49,136,255,.15);
 }
+
 
 .radar-ring {
     position: absolute;
 
     border-radius: 50%;
 
-    border: 1px solid rgba(49, 136, 255, 0.15);
+    border: 1px solid rgba(49,136,255,.15);
 }
+
 
 .ring-1 {
     width: 32%;
     height: 32%;
 }
 
+
 .ring-2 {
     width: 58%;
     height: 58%;
 }
 
+
 .ring-3 {
     width: 84%;
     height: 84%;
 }
+
 
 .radar-center {
     width: 70px;
@@ -465,16 +450,11 @@ select:focus-visible {
             #1766d1
         );
 
-    border: 5px solid rgba(255, 255, 255, 0.08);
-
     font-size: 26px;
-
-    box-shadow:
-        0 0 0 12px rgba(49, 136, 255, 0.08),
-        0 0 50px rgba(49, 136, 255, 0.25);
 
     z-index: 3;
 }
+
 
 .radar-bus {
     position: absolute;
@@ -489,61 +469,44 @@ select:focus-visible {
 
     background: var(--card-light);
 
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255,255,255,.1);
 
     font-size: 19px;
-
-    box-shadow:
-        0 8px 20px rgba(0, 0, 0, 0.3);
 
     z-index: 4;
 }
 
+
 .bus-1 {
     top: 18%;
     right: 23%;
-
-    animation: floatingBus 3.5s ease-in-out infinite;
 }
+
 
 .bus-2 {
     bottom: 18%;
     left: 18%;
-
-    animation: floatingBus 4.2s ease-in-out infinite reverse;
 }
+
 
 .bus-3 {
     top: 46%;
     right: 3%;
-
-    animation: floatingBus 3.8s ease-in-out infinite 0.5s;
 }
 
-@keyframes floatingBus {
-    0%,
-    100% {
-        transform: translateY(0);
-    }
-
-    50% {
-        transform: translateY(-8px);
-    }
-}
-
-/* =========================================================
-   SECTION HEADINGS
-   ========================================================= */
 
 .section-heading {
     display: flex;
+
     align-items: flex-end;
+
     justify-content: space-between;
 
     gap: 20px;
 
     margin-bottom: 20px;
 }
+
 
 .section-label {
     display: block;
@@ -558,40 +521,54 @@ select:focus-visible {
     letter-spacing: 1.5px;
 }
 
+
 .section-heading h3 {
     font-size: 24px;
 
     line-height: 1.2;
-
-    letter-spacing: -0.8px;
 }
+
 
 .bus-count {
     color: var(--text-muted);
 
     font-size: 12px;
+
     font-weight: 600;
 }
 
-/* =========================================================
-   FILTERS
-   ========================================================= */
+
+/* ================= FILTER ================= */
 
 .filter-section {
     margin-bottom: 45px;
+
+    position: relative;
+
+    z-index: 20;
 }
 
-.operator-filters {
+
+.operator-buttons {
     display: flex;
+
     flex-wrap: wrap;
 
     gap: 10px;
+
+    position: relative;
+
+    z-index: 30;
+
+    pointer-events: auto;
 }
+
 
 .operator-btn {
     min-height: 48px;
 
     display: inline-flex;
+
     align-items: center;
 
     gap: 9px;
@@ -600,39 +577,35 @@ select:focus-visible {
 
     border-radius: 12px;
 
-    background: rgba(255, 255, 255, 0.035);
+    background: rgba(255,255,255,.035);
 
     border: 1px solid var(--border);
 
     color: var(--text-soft);
 
-    cursor: pointer;
-
     font-size: 13px;
-    font-weight: 700;
 
-    transition:
-        background 0.2s ease,
-        border-color 0.2s ease,
-        color 0.2s ease,
-        transform 0.2s ease;
+    font-weight: 700;
 }
 
+
 .operator-btn:hover {
-    background: rgba(255, 255, 255, 0.07);
+    background: rgba(255,255,255,.07);
 
     color: white;
 
     transform: translateY(-1px);
 }
 
+
 .operator-btn.active {
     background: var(--primary-soft);
 
-    border-color: rgba(49, 136, 255, 0.4);
+    border-color: rgba(49,136,255,.4);
 
     color: #dbeaff;
 }
+
 
 .operator-logo {
     width: 32px;
@@ -643,69 +616,48 @@ select:focus-visible {
 
     border-radius: 9px;
 
+    color: white;
+
     font-size: 11px;
     font-weight: 900;
-
-    color: white;
 }
+
 
 .operator-logo.all {
     background: #263750;
 }
 
+
 .operator-logo.victory {
     background: #255bb2;
 }
+
 
 .operator-logo.partas {
     background: #b53a43;
 }
 
+
 .operator-logo.pitco {
     background: #337a60;
 }
+
 
 .operator-logo.lupa {
     background: #7656b3;
 }
 
-/* =========================================================
-   MAP
-   ========================================================= */
+
+/* ================= MAP ================= */
 
 .map-section {
     margin-bottom: 45px;
+
+    position: relative;
+
+    z-index: 10;
 }
 
-.map-actions {
-    display: flex;
-    gap: 8px;
-}
-
-.small-btn {
-    min-height: 38px;
-
-    padding: 0 13px;
-
-    border-radius: 10px;
-
-    background: rgba(255, 255, 255, 0.045);
-
-    border: 1px solid var(--border);
-
-    color: var(--text-soft);
-
-    cursor: pointer;
-
-    font-size: 12px;
-    font-weight: 700;
-}
-
-.small-btn:hover {
-    color: white;
-
-    background: rgba(255, 255, 255, 0.08);
-}
 
 .map-card {
     position: relative;
@@ -723,10 +675,16 @@ select:focus-visible {
     box-shadow: var(--shadow);
 }
 
+
 #map {
     width: 100%;
     height: 100%;
+
+    position: relative;
+
+    z-index: 1;
 }
+
 
 .map-overlay {
     position: absolute;
@@ -734,38 +692,43 @@ select:focus-visible {
     top: 50%;
     left: 50%;
 
-    width: min(340px, calc(100% - 40px));
+    width: min(340px,calc(100% - 40px));
 
     padding: 28px;
 
-    transform: translate(-50%, -50%);
+    transform: translate(-50%,-50%);
 
     text-align: center;
 
     border-radius: 20px;
 
-    background:
-        rgba(7, 16, 31, 0.94);
+    background: rgba(7,16,31,.94);
 
-    border: 1px solid rgba(255, 255, 255, 0.1);
-
-    box-shadow:
-        0 25px 70px rgba(0, 0, 0, 0.35);
-
-    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255,255,255,.1);
 
     z-index: 1000;
 
-    transition:
-        opacity 0.25s ease,
-        visibility 0.25s ease;
+    pointer-events: auto;
 }
+
 
 .map-overlay.hidden {
     opacity: 0;
+
     visibility: hidden;
+
     pointer-events: none;
 }
+
+
+.map-overlay .primary-btn {
+    position: relative;
+
+    z-index: 1100;
+
+    pointer-events: auto;
+}
+
 
 .overlay-icon {
     width: 54px;
@@ -774,7 +737,7 @@ select:focus-visible {
     display: grid;
     place-items: center;
 
-    margin: 0 auto 15px;
+    margin: auto auto 15px;
 
     border-radius: 15px;
 
@@ -783,11 +746,13 @@ select:focus-visible {
     font-size: 24px;
 }
 
+
 .map-overlay h4 {
     margin-bottom: 7px;
 
     font-size: 17px;
 }
+
 
 .map-overlay p {
     margin-bottom: 18px;
@@ -795,12 +760,8 @@ select:focus-visible {
     color: var(--text-soft);
 
     font-size: 12px;
-    line-height: 1.6;
 }
 
-.map-overlay .primary-btn {
-    min-height: 42px;
-}
 
 .map-legend {
     position: absolute;
@@ -809,6 +770,7 @@ select:focus-visible {
     bottom: 15px;
 
     display: flex;
+
     align-items: center;
 
     gap: 12px;
@@ -817,45 +779,44 @@ select:focus-visible {
 
     border-radius: 10px;
 
-    background: rgba(7, 16, 31, 0.9);
-
-    border: 1px solid rgba(255, 255, 255, 0.1);
-
-    backdrop-filter: blur(10px);
+    background: rgba(7,16,31,.9);
 
     color: white;
 
     z-index: 500;
 
+    pointer-events: none;
+
     font-size: 11px;
 }
 
+
 .legend-item {
     display: flex;
+
     align-items: center;
 
     gap: 5px;
 }
 
+
 .legend-dot {
     width: 8px;
     height: 8px;
 
-    display: block;
-
     border-radius: 50%;
 }
 
+
 .user-dot {
     background: #3188ff;
-
-    box-shadow:
-        0 0 0 3px rgba(49, 136, 255, 0.2);
 }
+
 
 .legend-bus {
     font-size: 14px;
 }
+
 
 .legend-demo {
     width: 8px;
@@ -866,103 +827,62 @@ select:focus-visible {
     background: var(--warning);
 }
 
-/* Leaflet customization */
 
-.leaflet-control-zoom a {
-    background: #0b1628 !important;
-    color: white !important;
+.small-btn {
+    min-height: 38px;
 
-    border-color: rgba(255, 255, 255, 0.1) !important;
+    padding: 0 13px;
+
+    border-radius: 10px;
+
+    background: rgba(255,255,255,.045);
+
+    border: 1px solid var(--border);
+
+    color: var(--text-soft);
+
+    font-size: 12px;
+
+    font-weight: 700;
 }
 
-.leaflet-control-attribution {
-    font-size: 9px !important;
+
+/* ================= LEAFLET ================= */
+
+.leaflet-control-container {
+    position: relative;
+
+    z-index: 5000;
 }
 
-.bus-marker {
-    width: 38px;
-    height: 38px;
 
-    display: grid;
-    place-items: center;
-
-    border-radius: 12px;
-
-    background:
-        linear-gradient(
-            145deg,
-            #3188ff,
-            #1766d1
-        );
-
-    border: 2px solid white;
-
-    font-size: 19px;
-
-    box-shadow:
-        0 5px 14px rgba(0, 0, 0, 0.3);
+.leaflet-pane {
+    z-index: 400;
 }
 
-.bus-marker.demo-marker {
-    background:
-        linear-gradient(
-            145deg,
-            #ffb73f,
-            #d9850d
-        );
+
+.leaflet-top,
+.leaflet-bottom {
+    z-index: 700;
 }
 
-.user-marker {
-    width: 18px;
-    height: 18px;
 
-    border-radius: 50%;
-
-    background: #3188ff;
-
-    border: 4px solid white;
-
-    box-shadow:
-        0 0 0 8px rgba(49, 136, 255, 0.2),
-        0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-/* =========================================================
-   NEARBY BUS LIST
-   ========================================================= */
+/* ================= BUS LIST ================= */
 
 .nearby-section {
     margin-bottom: 45px;
 }
 
-.sort-select {
-    min-height: 38px;
-
-    padding: 0 30px 0 12px;
-
-    border-radius: 10px;
-
-    border: 1px solid var(--border);
-
-    background:
-        #0e1b2f;
-
-    color: var(--text-soft);
-
-    cursor: pointer;
-
-    font-size: 12px;
-    font-weight: 600;
-}
 
 .bus-list {
     display: grid;
 
     grid-template-columns:
-        repeat(2, minmax(0, 1fr));
+        repeat(2,minmax(0,1fr));
 
     gap: 12px;
 }
+
 
 .bus-card {
     position: relative;
@@ -974,47 +894,45 @@ select:focus-visible {
     background:
         linear-gradient(
             145deg,
-            rgba(18, 35, 59, 0.9),
-            rgba(14, 27, 47, 0.9)
+            rgba(18,35,59,.9),
+            rgba(14,27,47,.9)
         );
 
     border: 1px solid var(--border);
 
-    transition:
-        transform 0.2s ease,
-        border-color 0.2s ease,
-        background 0.2s ease;
-
     cursor: pointer;
+
+    pointer-events: auto;
 }
+
 
 .bus-card:hover {
+    border-color:
+        rgba(49,136,255,.3);
+
     transform: translateY(-2px);
-
-    border-color: rgba(49, 136, 255, 0.3);
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(21, 42, 70, 0.95),
-            rgba(14, 27, 47, 0.95)
-        );
 }
+
 
 .bus-card-top {
     display: flex;
+
     align-items: flex-start;
+
     justify-content: space-between;
 
     gap: 12px;
 }
 
+
 .bus-main {
     display: flex;
+
     align-items: center;
 
     gap: 12px;
 }
+
 
 .bus-card-icon {
     width: 44px;
@@ -1030,10 +948,13 @@ select:focus-visible {
     font-size: 21px;
 }
 
+
 .bus-card h4 {
     font-size: 14px;
+
     font-weight: 800;
 }
+
 
 .bus-operator {
     margin-top: 2px;
@@ -1041,10 +962,10 @@ select:focus-visible {
     color: var(--text-muted);
 
     font-size: 10px;
-    font-weight: 700;
 
-    letter-spacing: 0.6px;
+    font-weight: 700;
 }
+
 
 .demo-badge,
 .live-badge {
@@ -1053,28 +974,30 @@ select:focus-visible {
     border-radius: 6px;
 
     font-size: 8px;
-    font-weight: 900;
 
-    letter-spacing: 0.6px;
+    font-weight: 900;
 }
 
+
 .demo-badge {
-    background: rgba(255, 191, 77, 0.12);
+    background: rgba(255,191,77,.12);
 
     color: var(--warning);
 }
 
+
 .live-badge {
-    background: rgba(54, 217, 139, 0.12);
+    background: rgba(54,217,139,.12);
 
     color: var(--success);
 }
+
 
 .bus-details {
     display: grid;
 
     grid-template-columns:
-        repeat(3, 1fr);
+        repeat(3,1fr);
 
     gap: 8px;
 
@@ -1085,6 +1008,7 @@ select:focus-visible {
     border-top: 1px solid var(--border);
 }
 
+
 .detail-item span {
     display: block;
 
@@ -1093,8 +1017,8 @@ select:focus-visible {
     font-size: 9px;
 
     text-transform: uppercase;
-    letter-spacing: 0.5px;
 }
+
 
 .detail-item strong {
     display: block;
@@ -1106,6 +1030,7 @@ select:focus-visible {
     font-size: 11px;
 }
 
+
 .empty-state {
     grid-column: 1 / -1;
 
@@ -1115,47 +1040,38 @@ select:focus-visible {
 
     border-radius: 18px;
 
-    background: rgba(255, 255, 255, 0.025);
+    background: rgba(255,255,255,.025);
 
-    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border: 1px dashed rgba(255,255,255,.1);
 }
+
 
 .empty-icon {
-    width: 58px;
-    height: 58px;
+    font-size: 30px;
 
-    display: grid;
-    place-items: center;
-
-    margin: 0 auto 13px;
-
-    border-radius: 16px;
-
-    background: rgba(255, 255, 255, 0.04);
-
-    font-size: 26px;
+    margin-bottom: 12px;
 }
+
 
 .empty-state h4 {
     font-size: 15px;
 }
 
-.empty-state p {
-    max-width: 350px;
 
-    margin: 7px auto 0;
+.empty-state p {
+    margin-top: 7px;
 
     color: var(--text-muted);
 
     font-size: 12px;
 }
 
-/* =========================================================
-   DATA STATUS
-   ========================================================= */
+
+/* ================= DATA ================= */
 
 .data-status-card {
     display: flex;
+
     align-items: center;
 
     gap: 15px;
@@ -1166,37 +1082,34 @@ select:focus-visible {
 
     border-radius: 17px;
 
-    background:
-        rgba(255, 191, 77, 0.05);
+    background: rgba(255,191,77,.05);
 
-    border: 1px solid rgba(255, 191, 77, 0.14);
+    border: 1px solid rgba(255,191,77,.14);
 }
+
 
 .data-status-icon {
     width: 42px;
     height: 42px;
-
-    flex: 0 0 auto;
 
     display: grid;
     place-items: center;
 
     border-radius: 12px;
 
-    background: rgba(255, 191, 77, 0.1);
-
-    font-size: 18px;
+    background: rgba(255,191,77,.1);
 }
+
 
 .data-status-content {
-    min-width: 0;
-
     flex: 1;
 }
+
 
 .data-status-content h3 {
     font-size: 13px;
 }
+
 
 .data-status-content p {
     margin-top: 2px;
@@ -1206,37 +1119,38 @@ select:focus-visible {
     font-size: 11px;
 }
 
-.data-status-badge {
-    flex: 0 0 auto;
 
+.data-status-badge {
     padding: 6px 9px;
 
     border-radius: 7px;
 
-    background: rgba(255, 191, 77, 0.1);
+    background: rgba(255,191,77,.1);
 
     color: var(--warning);
 
     font-size: 9px;
+
     font-weight: 900;
 }
 
-/* =========================================================
-   INFO CARDS
-   ========================================================= */
+
+/* ================= INFO ================= */
 
 .info-section {
     margin-bottom: 40px;
 }
 
+
 .info-grid {
     display: grid;
 
     grid-template-columns:
-        repeat(3, minmax(0, 1fr));
+        repeat(3,minmax(0,1fr));
 
     gap: 13px;
 }
+
 
 .info-card {
     position: relative;
@@ -1245,19 +1159,18 @@ select:focus-visible {
 
     padding: 24px;
 
-    overflow: hidden;
-
     border-radius: 18px;
 
     background:
         linear-gradient(
             145deg,
-            rgba(18, 35, 59, 0.7),
-            rgba(14, 27, 47, 0.7)
+            rgba(18,35,59,.7),
+            rgba(14,27,47,.7)
         );
 
     border: 1px solid var(--border);
 }
+
 
 .info-number {
     position: absolute;
@@ -1265,11 +1178,13 @@ select:focus-visible {
     top: 17px;
     right: 20px;
 
-    color: rgba(255, 255, 255, 0.08);
+    color: rgba(255,255,255,.08);
 
     font-size: 25px;
+
     font-weight: 900;
 }
+
 
 .info-icon {
     width: 44px;
@@ -1287,9 +1202,11 @@ select:focus-visible {
     font-size: 20px;
 }
 
+
 .info-card h4 {
     font-size: 15px;
 }
+
 
 .info-card p {
     margin-top: 8px;
@@ -1301,12 +1218,12 @@ select:focus-visible {
     line-height: 1.7;
 }
 
-/* =========================================================
-   NOTICE
-   ========================================================= */
+
+/* ================= NOTICE ================= */
 
 .notice {
     display: flex;
+
     align-items: flex-start;
 
     gap: 13px;
@@ -1315,26 +1232,26 @@ select:focus-visible {
 
     border-radius: 16px;
 
-    background: rgba(49, 136, 255, 0.055);
+    background: rgba(49,136,255,.055);
 
-    border: 1px solid rgba(49, 136, 255, 0.13);
+    border: 1px solid rgba(49,136,255,.13);
 }
+
 
 .notice-icon {
     width: 35px;
     height: 35px;
 
-    flex: 0 0 auto;
-
     display: grid;
     place-items: center;
+
+    flex-shrink: 0;
 
     border-radius: 10px;
 
     background: var(--primary-soft);
-
-    font-size: 15px;
 }
+
 
 .notice strong {
     display: block;
@@ -1342,9 +1259,8 @@ select:focus-visible {
     font-size: 12px;
 }
 
-.notice p {
-    max-width: 800px;
 
+.notice p {
     margin-top: 3px;
 
     color: var(--text-muted);
@@ -1354,9 +1270,8 @@ select:focus-visible {
     line-height: 1.7;
 }
 
-/* =========================================================
-   FOOTER
-   ========================================================= */
+
+/* ================= FOOTER ================= */
 
 .footer {
     width: 100%;
@@ -1372,64 +1287,33 @@ select:focus-visible {
     font-size: 11px;
 }
 
+
 .footer-brand {
     margin-bottom: 4px;
 
     color: var(--text-soft);
 }
 
+
 .footer-small {
     margin-top: 4px;
 
     font-size: 9px;
-
-    opacity: 0.7;
 }
 
-/* =========================================================
-   ANIMATIONS
-   ========================================================= */
 
-.bus-card {
-    animation: fadeUp 0.35s ease both;
-}
+/* ================= RESPONSIVE ================= */
 
-@keyframes fadeUp {
-    from {
-        opacity: 0;
-        transform: translateY(8px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* =========================================================
-   RESPONSIVE
-   ========================================================= */
-
-@media (max-width: 900px) {
+@media (max-width:900px) {
 
     .hero {
         grid-template-columns: 1fr;
 
-        padding-top: 35px;
-
         gap: 15px;
-    }
-
-    .hero-text {
-        max-width: 700px;
     }
 
     .hero-card {
         min-height: 320px;
-    }
-
-    .radar-circle {
-        width: 300px;
     }
 
     .bus-list {
@@ -1440,66 +1324,27 @@ select:focus-visible {
         grid-template-columns: 1fr;
     }
 
-    .info-card {
-        min-height: 180px;
-    }
 }
 
-@media (max-width: 650px) {
+
+@media (max-width:650px) {
 
     .topbar {
-        padding: 17px 17px;
-
-        align-items: flex-start;
-    }
-
-    .brand-icon {
-        width: 42px;
-        height: 42px;
-
-        border-radius: 12px;
-
-        font-size: 20px;
-    }
-
-    .brand h1 {
-        font-size: 17px;
-    }
-
-    .brand p {
-        font-size: 9px;
-    }
-
-    .connection-status {
-        padding: 7px 9px;
-
-        font-size: 10px;
+        padding: 17px;
     }
 
     .container {
         padding:
-            5px
-            17px
-            50px;
+            5px 17px 50px;
     }
 
     .hero {
-        min-height: auto;
-
         padding:
-            35px
-            0
-            45px;
+            35px 0 45px;
     }
 
     .hero h2 {
         font-size: 47px;
-
-        letter-spacing: -2.8px;
-    }
-
-    .hero-text > p {
-        font-size: 14px;
     }
 
     .hero-buttons {
@@ -1513,20 +1358,10 @@ select:focus-visible {
         width: 100%;
     }
 
-    .hero-card {
-        min-height: 280px;
-    }
-
-    .radar-circle {
-        width: 260px;
-    }
-
     .section-heading {
         align-items: flex-start;
 
         flex-direction: column;
-
-        gap: 10px;
     }
 
     .sort-select {
@@ -1535,53 +1370,18 @@ select:focus-visible {
 
     .map-card {
         height: 430px;
-
-        border-radius: 17px;
     }
 
-    .map-legend {
-        left: 10px;
-        bottom: 10px;
-
-        gap: 8px;
-
-        padding: 8px;
-
-        font-size: 9px;
-    }
-
-    .data-status-card {
-        align-items: flex-start;
-    }
-
-    .data-status-badge {
-        display: none;
-    }
-
-    .notice {
-        padding: 15px;
-    }
 }
 
-@media (max-width: 420px) {
 
-    .topbar {
-        gap: 10px;
-    }
+@media (max-width:420px) {
 
-    .connection-status span:last-child {
-        display: none;
-    }
-
-    .hero h2 {
-        font-size: 42px;
-    }
-
-    .operator-filters {
+    .operator-buttons {
         display: grid;
 
         grid-template-columns:
-            repeat(2, 1fr);
+            repeat(2,1fr);
     }
 
     .operator-btn {
@@ -1590,31 +1390,4 @@ select:focus-visible {
         justify-content: flex-start;
     }
 
-    .map-card {
-        height: 400px;
-    }
-
-    .bus-details {
-        grid-template-columns:
-            repeat(3, 1fr);
-    }
-}
-
-/* =========================================================
-   REDUCED MOTION
-   ========================================================= */
-
-@media (prefers-reduced-motion: reduce) {
-
-    html {
-        scroll-behavior: auto;
-    }
-
-    *,
-    *::before,
-    *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
 }

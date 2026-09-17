@@ -1,27 +1,32 @@
 "use strict";
 
-/* =========================================================
+/* =========================================
    BUSRADAR PH
-   ========================================================= */
+   ========================================= */
 
 const STORAGE_KEY = "busradar_ph_bus_positions";
 const LOCATION_KEY = "busradar_ph_user_location";
-const API_URL = "/api/buses";
 
 const DEFAULT_CENTER = [15.4800, 120.5950];
 const DEFAULT_ZOOM = 13;
 const UPDATE_INTERVAL = 5000;
 
 
-/* =========================================================
+/* =========================================
+   DOM ELEMENTS
+   ========================================= */
+
+let busList = null;
+
+
+/* =========================================
    APP STATE
-   ========================================================= */
+   ========================================= */
 
 let map = null;
 let buses = [];
 let userLocation = null;
 let userMarker = null;
-
 let busMarkers = {};
 
 let selectedOperator = "ALL";
@@ -31,9 +36,9 @@ let demoTimer = null;
 let isUsingRealData = false;
 
 
-/* =========================================================
-   DEMO BUS DATA
-   ========================================================= */
+/* =========================================
+   DEMO BUSES
+   ========================================= */
 
 const DEMO_BUSES = [
     {
@@ -90,13 +95,15 @@ const DEMO_BUSES = [
 ];
 
 
-/* =========================================================
-   INITIALIZE
-   ========================================================= */
+/* =========================================
+   START APP
+   ========================================= */
 
 document.addEventListener("DOMContentLoaded", function () {
 
     console.log("BusRadar PH starting...");
+
+    busList = document.getElementById("busList");
 
     setupButtons();
 
@@ -112,20 +119,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
     startDemoMovement();
 
-    tryRealApi();
+    registerServiceWorker();
 
 });
 
 
-/* =========================================================
-   BUTTON SETUP
-   ========================================================= */
+/* =========================================
+   BUTTONS
+   ========================================= */
 
 function setupButtons() {
-
-    /*
-       OPERATOR BUTTONS
-    */
 
     const operatorButtons =
         document.querySelectorAll(".operator-btn");
@@ -138,46 +141,26 @@ function setupButtons() {
 
     operatorButtons.forEach(function (button) {
 
-        button.addEventListener("click", function () {
+        button.addEventListener("click", function (event) {
+
+            event.preventDefault();
+
+            event.stopPropagation();
 
             const operator =
-                this.getAttribute("data-operator");
-
-            console.log(
-                "Operator selected:",
-                operator
-            );
-
+                this.dataset.operator;
 
             if (!operator) {
                 return;
             }
 
-
             selectedOperator = operator;
 
-
-            /*
-               Remove active from ALL buttons
-            */
-
             operatorButtons.forEach(function (btn) {
-
                 btn.classList.remove("active");
-
             });
 
-
-            /*
-               Add active to clicked button
-            */
-
             this.classList.add("active");
-
-
-            /*
-               Re-render
-            */
 
             renderMap();
 
@@ -190,10 +173,6 @@ function setupButtons() {
     });
 
 
-    /*
-       LOCATION BUTTON
-    */
-
     const locationButton =
         document.getElementById("locationBtn");
 
@@ -201,77 +180,77 @@ function setupButtons() {
 
         locationButton.addEventListener(
             "click",
-            locateUser
+            function (event) {
+
+                event.preventDefault();
+
+                locateUser();
+
+            }
         );
 
     }
 
 
-    /*
-       OVERLAY LOCATION BUTTON
-    */
-
     const overlayButton =
-        document.getElementById(
-            "overlayLocationBtn"
-        );
+        document.getElementById("overlayLocationBtn");
 
     if (overlayButton) {
 
         overlayButton.addEventListener(
             "click",
-            locateUser
+            function (event) {
+
+                event.preventDefault();
+
+                locateUser();
+
+            }
         );
 
     }
 
 
-    /*
-       CENTER BUTTON
-    */
-
     const centerButton =
-        document.getElementById(
-            "centerLocationBtn"
-        );
+        document.getElementById("centerLocationBtn");
 
     if (centerButton) {
 
         centerButton.addEventListener(
             "click",
-            centerOnUser
+            function (event) {
+
+                event.preventDefault();
+
+                centerOnUser();
+
+            }
         );
 
     }
 
 
-    /*
-       REFRESH BUTTON
-    */
-
     const refreshButton =
-        document.getElementById(
-            "refreshBtn"
-        );
+        document.getElementById("refreshBtn");
 
     if (refreshButton) {
 
         refreshButton.addEventListener(
             "click",
-            refreshBuses
+            function (event) {
+
+                event.preventDefault();
+
+                refreshBuses();
+
+            }
         );
 
     }
 
 
-    /*
-       SORT SELECT
-    */
-
     const sortSelect =
-        document.getElementById(
-            "sortSelect"
-        );
+        document.getElementById("sortSelect");
 
     if (sortSelect) {
 
@@ -279,8 +258,7 @@ function setupButtons() {
             "change",
             function () {
 
-                sortMode =
-                    this.value;
+                sortMode = this.value;
 
                 renderList();
 
@@ -289,10 +267,6 @@ function setupButtons() {
 
     }
 
-
-    /*
-       ONLINE / OFFLINE
-    */
 
     window.addEventListener(
         "online",
@@ -303,12 +277,13 @@ function setupButtons() {
         "offline",
         updateConnectionStatus
     );
+
 }
 
 
-/* =========================================================
-   CONNECTION STATUS
-   ========================================================= */
+/* =========================================
+   CONNECTION
+   ========================================= */
 
 function updateConnectionStatus() {
 
@@ -322,7 +297,6 @@ function updateConnectionStatus() {
             "connectionText"
         );
 
-
     if (!status || !text) {
         return;
     }
@@ -330,84 +304,94 @@ function updateConnectionStatus() {
 
     if (navigator.onLine) {
 
-        status.classList.remove(
-            "offline"
-        );
+        status.classList.remove("offline");
 
-        status.classList.add(
-            "online"
-        );
+        status.classList.add("online");
 
-        text.textContent =
-            "Online";
+        text.textContent = "Online";
 
     } else {
 
-        status.classList.remove(
-            "online"
-        );
+        status.classList.remove("online");
 
-        status.classList.add(
-            "offline"
-        );
+        status.classList.add("offline");
 
-        text.textContent =
-            "Offline";
+        text.textContent = "Offline";
+
     }
+
 }
 
 
-/* =========================================================
+/* =========================================
    MAP
-   ========================================================= */
+   ========================================= */
 
 function initMap() {
 
-    if (
-        typeof L === "undefined"
-    ) {
-
-        console.error(
-            "Leaflet was not loaded."
-        );
-
-        return;
-    }
-
-
     const mapElement =
-        document.getElementById(
-            "map"
-        );
-
+        document.getElementById("map");
 
     if (!mapElement) {
         return;
     }
 
 
-    map =
-        L.map("map").setView(
-            DEFAULT_CENTER,
-            DEFAULT_ZOOM
+    if (typeof L === "undefined") {
+
+        console.warn(
+            "Leaflet is unavailable."
         );
 
+        return;
+    }
 
-    L.tileLayer(
-        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        {
-            maxZoom: 19,
 
-            attribution:
-                '&copy; OpenStreetMap contributors'
-        }
-    ).addTo(map);
+    try {
+
+        map =
+            L.map(
+                mapElement
+            ).setView(
+                DEFAULT_CENTER,
+                DEFAULT_ZOOM
+            );
+
+
+        L.tileLayer(
+            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            {
+                maxZoom: 19,
+                attribution:
+                    "&copy; OpenStreetMap contributors"
+            }
+        ).addTo(map);
+
+
+        setTimeout(function () {
+
+            map.invalidateSize();
+
+        }, 300);
+
+
+    } catch (error) {
+
+        console.error(
+            "Map initialization failed:",
+            error
+        );
+
+        map = null;
+
+    }
+
 }
 
 
-/* =========================================================
+/* =========================================
    LOAD BUSES
-   ========================================================= */
+   ========================================= */
 
 function loadBuses() {
 
@@ -433,31 +417,31 @@ function loadBuses() {
                 buses = parsed;
 
                 return;
-            }
-        }
 
+            }
+
+        }
 
     } catch (error) {
 
-        console.error(
-            "Error loading buses:",
+        console.warn(
+            "Could not load saved buses.",
             error
         );
 
     }
 
 
-    buses =
-        cloneDemoBuses();
-
+    buses = cloneDemoBuses();
 
     saveBuses();
+
 }
 
 
-/* =========================================================
+/* =========================================
    SAVE BUSES
-   ========================================================= */
+   ========================================= */
 
 function saveBuses() {
 
@@ -470,17 +454,19 @@ function saveBuses() {
 
     } catch (error) {
 
-        console.error(
-            "Error saving buses:",
+        console.warn(
+            "Could not save buses.",
             error
         );
+
     }
+
 }
 
 
-/* =========================================================
-   CLONE DEMO BUSES
-   ========================================================= */
+/* =========================================
+   CLONE DEMO
+   ========================================= */
 
 function cloneDemoBuses() {
 
@@ -492,12 +478,13 @@ function cloneDemoBuses() {
         };
 
     });
+
 }
 
 
-/* =========================================================
+/* =========================================
    LOCATION
-   ========================================================= */
+   ========================================= */
 
 function loadLocation() {
 
@@ -508,15 +495,12 @@ function loadLocation() {
                 LOCATION_KEY
             );
 
-
         if (!saved) {
             return;
         }
 
-
         const parsed =
             JSON.parse(saved);
-
 
         if (
             parsed &&
@@ -530,29 +514,29 @@ function loadLocation() {
 
     } catch (error) {
 
-        console.error(
-            "Error loading location:",
-            error
+        console.warn(
+            "Could not load location."
         );
+
     }
+
 }
 
 
-/* =========================================================
+/* =========================================
    LOCATE USER
-   ========================================================= */
+   ========================================= */
 
 function locateUser() {
 
-    if (
-        !navigator.geolocation
-    ) {
+    if (!navigator.geolocation) {
 
         showLocationMessage(
-            "Geolocation is not supported by your browser."
+            "Geolocation is not supported by this browser."
         );
 
         return;
+
     }
 
 
@@ -568,6 +552,7 @@ function locateUser() {
 
         button.textContent =
             "📍 Finding...";
+
     }
 
 
@@ -580,25 +565,20 @@ function locateUser() {
 
         function (position) {
 
-            const latitude =
-                position.coords.latitude;
-
-            const longitude =
-                position.coords.longitude;
-
-            const accuracy =
-                position.coords.accuracy;
-
-
             userLocation = {
 
-                lat: latitude,
+                lat:
+                    position.coords.latitude,
 
-                lng: longitude,
+                lng:
+                    position.coords.longitude,
 
-                accuracy: accuracy,
+                accuracy:
+                    position.coords.accuracy,
 
-                updatedAt: Date.now()
+                updatedAt:
+                    Date.now()
+
             };
 
 
@@ -616,6 +596,7 @@ function locateUser() {
                 console.warn(
                     "Could not save location."
                 );
+
             }
 
 
@@ -630,8 +611,8 @@ function locateUser() {
 
                 map.setView(
                     [
-                        latitude,
-                        longitude
+                        userLocation.lat,
+                        userLocation.lng
                     ],
                     15
                 );
@@ -644,7 +625,9 @@ function locateUser() {
 
             showLocationMessage(
                 "Location found • Accuracy ±" +
-                Math.round(accuracy) +
+                Math.round(
+                    userLocation.accuracy
+                ) +
                 " m"
             );
 
@@ -655,13 +638,15 @@ function locateUser() {
 
                 button.textContent =
                     "📍 Update My Location";
+
             }
 
         },
 
+
         function (error) {
 
-            console.error(
+            console.warn(
                 "Location error:",
                 error
             );
@@ -685,6 +670,7 @@ function locateUser() {
 
                 message =
                     "Location request timed out.";
+
             }
 
 
@@ -699,32 +685,30 @@ function locateUser() {
 
                 button.textContent =
                     "📍 Try Again";
+
             }
 
         },
 
+
         {
             enableHighAccuracy: true,
-
             timeout: 10000,
-
             maximumAge: 30000
         }
 
     );
+
 }
 
 
-/* =========================================================
+/* =========================================
    USER MARKER
-   ========================================================= */
+   ========================================= */
 
 function renderUserMarker() {
 
-    if (
-        !map ||
-        !userLocation
-    ) {
+    if (!map || !userLocation) {
         return;
     }
 
@@ -737,9 +721,10 @@ function renderUserMarker() {
             html:
                 '<div class="user-marker"></div>',
 
-            iconSize: [18, 18],
+            iconSize: [18,18],
 
-            iconAnchor: [9, 9]
+            iconAnchor: [9,9]
+
         });
 
 
@@ -755,6 +740,7 @@ function renderUserMarker() {
         userMarker.setIcon(icon);
 
         return;
+
     }
 
 
@@ -773,12 +759,13 @@ function renderUserMarker() {
         .bindPopup(
             "<strong>📍 Your Location</strong>"
         );
+
 }
 
 
-/* =========================================================
-   CENTER USER
-   ========================================================= */
+/* =========================================
+   CENTER
+   ========================================= */
 
 function centerOnUser() {
 
@@ -787,6 +774,7 @@ function centerOnUser() {
         locateUser();
 
         return;
+
     }
 
 
@@ -808,39 +796,38 @@ function centerOnUser() {
 
 
     renderUserMarker();
+
 }
 
 
-/* =========================================================
+/* =========================================
    FILTER
-   ========================================================= */
+   ========================================= */
 
 function getFilteredBuses() {
 
-    if (
-        selectedOperator === "ALL"
-    ) {
+    if (selectedOperator === "ALL") {
 
         return buses.slice();
+
     }
 
 
-    return buses.filter(
-        function (bus) {
+    return buses.filter(function (bus) {
 
-            return (
-                bus.operator ===
-                selectedOperator
-            );
+        return (
+            bus.operator ===
+            selectedOperator
+        );
 
-        }
-    );
+    });
+
 }
 
 
-/* =========================================================
+/* =========================================
    SORT
-   ========================================================= */
+   ========================================= */
 
 function getSortedBuses() {
 
@@ -850,85 +837,80 @@ function getSortedBuses() {
 
     if (sortMode === "operator") {
 
-        return list.sort(
-            function (a, b) {
+        return list.sort(function (a,b) {
 
-                return (
-                    (
-                        a.operatorName ||
-                        a.operator ||
-                        ""
-                    )
-                    .localeCompare(
-                        b.operatorName ||
-                        b.operator ||
-                        ""
-                    )
-                );
+            return (
+                (
+                    a.operatorName ||
+                    a.operator ||
+                    ""
+                )
+                .localeCompare(
+                    b.operatorName ||
+                    b.operator ||
+                    ""
+                )
+            );
 
-            }
-        );
+        });
+
     }
 
 
     if (sortMode === "speed") {
 
-        return list.sort(
-            function (a, b) {
+        return list.sort(function (a,b) {
 
-                return (
-                    Number(b.speed || 0) -
-                    Number(a.speed || 0)
-                );
+            return (
+                Number(b.speed || 0) -
+                Number(a.speed || 0)
+            );
 
-            }
-        );
+        });
+
     }
 
 
-    if (sortMode === "distance") {
+    if (
+        sortMode === "distance" &&
+        userLocation
+    ) {
 
-        if (!userLocation) {
-            return list;
-        }
+        return list.sort(function (a,b) {
 
-
-        return list.sort(
-            function (a, b) {
-
-                const distanceA =
-                    distanceKm(
-                        userLocation.lat,
-                        userLocation.lng,
-                        a.lat,
-                        a.lng
-                    );
+            const distanceA =
+                distanceKm(
+                    userLocation.lat,
+                    userLocation.lng,
+                    a.lat,
+                    a.lng
+                );
 
 
-                const distanceB =
-                    distanceKm(
-                        userLocation.lat,
-                        userLocation.lng,
-                        b.lat,
-                        b.lng
-                    );
+            const distanceB =
+                distanceKm(
+                    userLocation.lat,
+                    userLocation.lng,
+                    b.lat,
+                    b.lng
+                );
 
 
-                return distanceA -
-                    distanceB;
+            return distanceA - distanceB;
 
-            }
-        );
+        });
+
     }
 
 
     return list;
+
 }
 
 
-/* =========================================================
+/* =========================================
    RENDER ALL
-   ========================================================= */
+   ========================================= */
 
 function renderAll() {
 
@@ -939,12 +921,13 @@ function renderAll() {
     renderList();
 
     updateBusCount();
+
 }
 
 
-/* =========================================================
+/* =========================================
    RENDER MAP
-   ========================================================= */
+   ========================================= */
 
 function renderMap() {
 
@@ -960,109 +943,93 @@ function renderMap() {
     const visibleIds = {};
 
 
-    visibleBuses.forEach(
-        function (bus) {
+    visibleBuses.forEach(function (bus) {
 
-            visibleIds[bus.id] = true;
-
-
-            const icon =
-                createBusIcon(bus);
+        visibleIds[bus.id] = true;
 
 
-            if (
-                busMarkers[bus.id]
-            ) {
+        const icon =
+            createBusIcon(bus);
 
-                busMarkers[
-                    bus.id
-                ].setLatLng(
+
+        if (busMarkers[bus.id]) {
+
+            busMarkers[bus.id].setLatLng(
+                [
+                    bus.lat,
+                    bus.lng
+                ]
+            );
+
+            busMarkers[bus.id].setIcon(icon);
+
+            busMarkers[bus.id]
+                .setPopupContent(
+                    createPopup(bus)
+                );
+
+        } else {
+
+            const marker =
+                L.marker(
                     [
                         bus.lat,
                         bus.lng
-                    ]
-                );
-
-                busMarkers[
-                    bus.id
-                ].setIcon(icon);
-
-                busMarkers[
-                    bus.id
-                ].setPopupContent(
-                    createPopup(bus)
-                );
-
-            } else {
-
-                const marker =
-                    L.marker(
-                        [
-                            bus.lat,
-                            bus.lng
-                        ],
-                        {
-                            icon: icon
-                        }
-                    )
-                    .addTo(map);
-
-
-                marker.bindPopup(
-                    createPopup(bus)
-                );
-
-
-                marker.on(
-                    "click",
-                    function () {
-
-                        highlightBus(
-                            bus.id
-                        );
-
+                    ],
+                    {
+                        icon: icon
                     }
-                );
+                )
+                .addTo(map);
 
 
-                busMarkers[
-                    bus.id
-                ] = marker;
-            }
+            marker.bindPopup(
+                createPopup(bus)
+            );
+
+
+            marker.on(
+                "click",
+                function () {
+
+                    highlightBus(
+                        bus.id
+                    );
+
+                }
+            );
+
+
+            busMarkers[bus.id] =
+                marker;
 
         }
-    );
 
+    });
 
-    /*
-       Remove markers that are
-       no longer visible
-    */
 
     Object.keys(
         busMarkers
-    ).forEach(
-        function (id) {
+    ).forEach(function (id) {
 
-            if (
-                !visibleIds[id]
-            ) {
+        if (!visibleIds[id]) {
 
-                map.removeLayer(
-                    busMarkers[id]
-                );
+            map.removeLayer(
+                busMarkers[id]
+            );
 
-                delete busMarkers[id];
-            }
+            delete busMarkers[id];
 
         }
-    );
+
+    });
+
 }
 
 
-/* =========================================================
+/* =========================================
    BUS ICON
-   ========================================================= */
+   ========================================= */
 
 function createBusIcon(bus) {
 
@@ -1081,18 +1048,20 @@ function createBusIcon(bus) {
             className +
             '">🚌</div>',
 
-        iconSize: [38, 38],
+        iconSize: [38,38],
 
-        iconAnchor: [19, 19],
+        iconAnchor: [19,19],
 
-        popupAnchor: [0, -20]
+        popupAnchor: [0,-20]
+
     });
+
 }
 
 
-/* =========================================================
-   MAP POPUP
-   ========================================================= */
+/* =========================================
+   POPUP
+   ========================================= */
 
 function createPopup(bus) {
 
@@ -1111,13 +1080,8 @@ function createPopup(bus) {
                     bus.lng
                 )
             );
+
     }
-
-
-    const mode =
-        bus.demo
-            ? "DEMO POSITION"
-            : "LIVE GPS";
 
 
     return `
@@ -1126,9 +1090,7 @@ function createPopup(bus) {
             font-family:Arial,sans-serif;
         ">
 
-            <strong style="
-                font-size:15px;
-            ">
+            <strong>
                 🚌 ${escapeHtml(bus.id)}
             </strong>
 
@@ -1143,47 +1105,30 @@ function createPopup(bus) {
                 )}
             </div>
 
-            <hr style="
-                border:0;
-                border-top:1px solid #ddd;
-                margin:9px 0;
-            ">
+            <hr>
 
-            <div style="
-                font-size:12px;
-                margin-bottom:4px;
-            ">
+            <div>
                 <strong>Route:</strong>
                 ${escapeHtml(
-                    bus.route ||
-                    "Unknown"
+                    bus.route
                 )}
             </div>
 
-            <div style="
-                font-size:12px;
-                margin-bottom:4px;
-            ">
+            <div>
                 <strong>Direction:</strong>
                 ${escapeHtml(
-                    bus.direction ||
-                    "Unknown"
+                    bus.direction
                 )}
             </div>
 
-            <div style="
-                font-size:12px;
-                margin-bottom:4px;
-            ">
+            <div>
                 <strong>Speed:</strong>
                 ${Number(
                     bus.speed || 0
                 )} km/h
             </div>
 
-            <div style="
-                font-size:12px;
-            ">
+            <div>
                 <strong>Distance:</strong>
                 ${distance}
             </div>
@@ -1193,22 +1138,31 @@ function createPopup(bus) {
                 font-size:10px;
                 font-weight:bold;
             ">
-                ${mode}
+                ${bus.demo
+                    ? "DEMO POSITION"
+                    : "LIVE GPS"}
             </div>
 
         </div>
     `;
+
 }
 
 
-/* =========================================================
+/* =========================================
    BUS LIST
-   ========================================================= */
+   ========================================= */
 
 function renderList() {
 
     if (!busList) {
+
+        console.warn(
+            "busList element not found."
+        );
+
         return;
+
     }
 
 
@@ -1238,55 +1192,46 @@ function renderList() {
         `;
 
         return;
+
     }
 
 
     busList.innerHTML =
-        list.map(
-            function (bus, index) {
+        list.map(function (bus,index) {
 
-                return createBusCard(
-                    bus,
-                    index
-                );
+            return createBusCard(
+                bus,
+                index
+            );
 
-            }
-        ).join("");
+        }).join("");
 
-
-    /*
-       Make cards clickable
-    */
 
     document
         .querySelectorAll(".bus-card")
-        .forEach(
-            function (card) {
+        .forEach(function (card) {
 
-                card.addEventListener(
-                    "click",
-                    function () {
+            card.addEventListener(
+                "click",
+                function () {
 
-                        focusBus(
-                            this.dataset.busId
-                        );
+                    focusBus(
+                        this.dataset.busId
+                    );
 
-                    }
-                );
+                }
+            );
 
-            }
-        );
+        });
+
 }
 
 
-/* =========================================================
+/* =========================================
    BUS CARD
-   ========================================================= */
+   ========================================= */
 
-function createBusCard(
-    bus,
-    index
-) {
+function createBusCard(bus,index) {
 
     let distance = "—";
 
@@ -1302,20 +1247,14 @@ function createBusCard(
                     bus.lng
                 )
             );
+
     }
-
-
-    const badge =
-        bus.demo
-            ? '<span class="demo-badge">DEMO</span>'
-            : '<span class="live-badge">LIVE</span>';
 
 
     return `
         <article
             class="bus-card"
             data-bus-id="${escapeHtml(bus.id)}"
-            style="animation-delay:${index * 0.04}s"
         >
 
             <div class="bus-card-top">
@@ -1345,7 +1284,11 @@ function createBusCard(
 
                 </div>
 
-                ${badge}
+                ${
+                    bus.demo
+                    ? '<span class="demo-badge">DEMO</span>'
+                    : '<span class="live-badge">LIVE</span>'
+                }
 
             </div>
 
@@ -1388,8 +1331,7 @@ function createBusCard(
 
                     <strong>
                         ${escapeHtml(
-                            bus.direction ||
-                            "—"
+                            bus.direction || "—"
                         )}
                     </strong>
 
@@ -1397,37 +1339,24 @@ function createBusCard(
 
             </div>
 
-
-            <div style="
-                margin-top:12px;
-                color:#70819a;
-                font-size:9px;
-            ">
-                📡 Updated
-                ${formatUpdatedTime(
-                    bus.updatedAt
-                )}
-            </div>
-
         </article>
     `;
+
 }
 
 
-/* =========================================================
+/* =========================================
    FOCUS BUS
-   ========================================================= */
+   ========================================= */
 
 function focusBus(id) {
 
     const bus =
-        buses.find(
-            function (item) {
+        buses.find(function (item) {
 
-                return item.id === id;
+            return item.id === id;
 
-            }
-        );
+        });
 
 
     if (!bus || !map) {
@@ -1453,44 +1382,25 @@ function focusBus(id) {
 
     if (marker) {
 
-        setTimeout(
-            function () {
+        marker.openPopup();
 
-                marker.openPopup();
-
-            },
-            250
-        );
     }
+
 }
 
 
-/* =========================================================
-   HIGHLIGHT BUS
-   ========================================================= */
+/* =========================================
+   HIGHLIGHT
+   ========================================= */
 
 function highlightBus(id) {
 
     document
         .querySelectorAll(".bus-card")
-        .forEach(
-            function (card) {
+        .forEach(function (card) {
 
-                card.style.outline =
-                    "none";
-
-            }
-        );
-
-
-    const cards =
-        document.querySelectorAll(
-            ".bus-card"
-        );
-
-
-    cards.forEach(
-        function (card) {
+            card.style.outline =
+                "none";
 
             if (
                 card.dataset.busId === id
@@ -1501,24 +1411,24 @@ function highlightBus(id) {
 
             }
 
-        }
-    );
+        });
+
 }
 
 
-/* =========================================================
-   BUS COUNT
-   ========================================================= */
+/* =========================================
+   COUNT
+   ========================================= */
 
 function updateBusCount() {
 
-    const countElement =
+    const element =
         document.getElementById(
             "busCount"
         );
 
 
-    if (!countElement) {
+    if (!element) {
         return;
     }
 
@@ -1527,19 +1437,20 @@ function updateBusCount() {
         getFilteredBuses().length;
 
 
-    countElement.textContent =
+    element.textContent =
         count +
         (
             count === 1
                 ? " bus"
                 : " buses"
         );
+
 }
 
 
-/* =========================================================
+/* =========================================
    REFRESH
-   ========================================================= */
+   ========================================= */
 
 async function refreshBuses() {
 
@@ -1555,27 +1466,39 @@ async function refreshBuses() {
 
         button.textContent =
             "↻ Updating...";
+
+    }
+
+
+    await new Promise(function (resolve) {
+
+        setTimeout(resolve, 500);
+
+    });
+
+
+    if (!isUsingRealData) {
+
+        buses =
+            buses.map(function (bus) {
+
+                if (!bus.demo) {
+                    return bus;
+                }
+
+                return {
+                    ...bus,
+                    updatedAt: Date.now()
+                };
+
+            });
+
+        saveBuses();
+
     }
 
 
-    try {
-
-        const success =
-            await tryRealApi();
-
-
-        if (!success) {
-
-            renderAll();
-        }
-
-    } catch (error) {
-
-        console.error(
-            error
-        );
-
-    }
+    renderAll();
 
 
     if (button) {
@@ -1584,273 +1507,15 @@ async function refreshBuses() {
 
         button.textContent =
             "↻ Refresh";
+
     }
+
 }
 
 
-/* =========================================================
-   REAL API
-   ========================================================= */
-
-async function tryRealApi() {
-
-    if (!navigator.onLine) {
-
-        setDataStatus(
-            "Offline mode",
-            "Using cached bus positions saved on this device.",
-            "CACHED"
-        );
-
-        return false;
-    }
-
-
-    try {
-
-        const response =
-            await fetch(
-                API_URL,
-                {
-                    method: "GET",
-
-                    headers: {
-                        "Accept":
-                            "application/json"
-                    },
-
-                    cache: "no-store"
-                }
-            );
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                "API unavailable"
-            );
-        }
-
-
-        const data =
-            await response.json();
-
-
-        if (
-            !Array.isArray(data) ||
-            data.length === 0
-        ) {
-
-            throw new Error(
-                "No bus data"
-            );
-        }
-
-
-        buses =
-            normalizeApiData(data);
-
-
-        if (buses.length === 0) {
-
-            throw new Error(
-                "Invalid bus data"
-            );
-        }
-
-
-        isUsingRealData = true;
-
-
-        saveBuses();
-
-        renderAll();
-
-
-        setDataStatus(
-            "Live GPS data",
-            "Bus positions are coming from the configured API.",
-            "LIVE"
-        );
-
-
-        return true;
-
-    } catch (error) {
-
-        console.log(
-            "Real API unavailable. Demo mode active."
-        );
-
-
-        isUsingRealData = false;
-
-
-        setDataStatus(
-            "Demo tracking mode",
-            "The buses currently shown use simulated positions for development and testing.",
-            "DEMO"
-        );
-
-
-        return false;
-    }
-}
-
-
-/* =========================================================
-   NORMALIZE API DATA
-   ========================================================= */
-
-function normalizeApiData(data) {
-
-    return data
-        .map(
-            function (item) {
-
-                const lat =
-                    Number(item.lat);
-
-                const lng =
-                    Number(item.lng);
-
-
-                if (
-                    !Number.isFinite(lat) ||
-                    !Number.isFinite(lng)
-                ) {
-
-                    return null;
-                }
-
-
-                return {
-
-                    id:
-                        String(
-                            item.id ||
-                            "UNKNOWN"
-                        ),
-
-                    operator:
-                        String(
-                            item.operator ||
-                            "UNKNOWN"
-                        ).toUpperCase(),
-
-                    operatorName:
-                        String(
-                            item.operatorName ||
-                            item.operator ||
-                            "Unknown Operator"
-                        ),
-
-                    route:
-                        String(
-                            item.route ||
-                            "Unknown Route"
-                        ),
-
-                    direction:
-                        String(
-                            item.direction ||
-                            "Unknown"
-                        ),
-
-                    lat: lat,
-
-                    lng: lng,
-
-                    speed:
-                        Number(
-                            item.speed || 0
-                        ),
-
-                    updatedAt:
-                        Number(
-                            item.updatedAt ||
-                            Date.now()
-                        ),
-
-                    demo:
-                        item.demo === true
-                };
-
-            }
-        )
-        .filter(Boolean);
-}
-
-
-/* =========================================================
-   DATA STATUS
-   ========================================================= */
-
-function setDataStatus(
-    title,
-    message,
-    badge
-) {
-
-    const titleElement =
-        document.getElementById(
-            "dataStatusTitle"
-        );
-
-    const textElement =
-        document.getElementById(
-            "dataStatusText"
-        );
-
-    const badgeElement =
-        document.getElementById(
-            "dataBadge"
-        );
-
-
-    if (titleElement) {
-
-        titleElement.textContent =
-            title;
-    }
-
-
-    if (textElement) {
-
-        textElement.textContent =
-            message;
-    }
-
-
-    if (badgeElement) {
-
-        badgeElement.textContent =
-            badge;
-
-
-        if (badge === "LIVE") {
-
-            badgeElement.style.background =
-                "rgba(54,217,139,.1)";
-
-            badgeElement.style.color =
-                "#36d98b";
-
-        } else {
-
-            badgeElement.style.background =
-                "rgba(255,191,77,.1)";
-
-            badgeElement.style.color =
-                "#ffbf4d";
-        }
-    }
-}
-
-
-/* =========================================================
+/* =========================================
    DEMO MOVEMENT
-   ========================================================= */
+   ========================================= */
 
 function startDemoMovement() {
 
@@ -1858,105 +1523,88 @@ function startDemoMovement() {
 
 
     demoTimer =
-        setInterval(
-            function () {
+        setInterval(function () {
 
-                if (isUsingRealData) {
-                    return;
-                }
-
-
-                if (!navigator.onLine) {
-                    return;
-                }
+            if (isUsingRealData) {
+                return;
+            }
 
 
-                buses =
-                    buses.map(
-                        function (bus) {
-
-                            if (!bus.demo) {
-                                return bus;
-                            }
+            if (!navigator.onLine) {
+                return;
+            }
 
 
-                            const movement =
-                                0.00008;
+            buses =
+                buses.map(function (bus) {
+
+                    if (!bus.demo) {
+                        return bus;
+                    }
 
 
-                            const latChange =
-                                (
-                                    Math.random() -
-                                    0.5
-                                ) *
-                                movement;
+                    const movement =
+                        0.00008;
 
 
-                            const lngChange =
-                                (
-                                    Math.random() -
-                                    0.5
-                                ) *
-                                movement;
+                    return {
+                        ...bus,
+
+                        lat:
+                            bus.lat +
+                            (
+                                Math.random() -
+                                .5
+                            ) *
+                            movement,
+
+                        lng:
+                            bus.lng +
+                            (
+                                Math.random() -
+                                .5
+                            ) *
+                            movement,
+
+                        speed:
+                            Math.max(
+                                0,
+                                Math.round(
+                                    bus.speed +
+                                    (
+                                        Math.random() -
+                                        .5
+                                    ) *
+                                    4
+                                )
+                            ),
+
+                        updatedAt:
+                            Date.now(),
+
+                        demo: true
+
+                    };
+
+                });
 
 
-                            const speedChange =
-                                (
-                                    Math.random() -
-                                    0.5
-                                ) *
-                                4;
+            saveBuses();
 
+            renderMap();
 
-                            return {
+            renderList();
 
-                                ...bus,
+            updateBusCount();
 
-                                lat:
-                                    bus.lat +
-                                    latChange,
+        }, UPDATE_INTERVAL);
 
-                                lng:
-                                    bus.lng +
-                                    lngChange,
-
-                                speed:
-                                    Math.max(
-                                        0,
-                                        Math.round(
-                                            bus.speed +
-                                            speedChange
-                                        )
-                                    ),
-
-                                updatedAt:
-                                    Date.now(),
-
-                                demo: true
-                            };
-
-                        }
-                    );
-
-
-                saveBuses();
-
-                renderMap();
-
-                renderList();
-
-                updateBusCount();
-
-            },
-
-            UPDATE_INTERVAL
-        );
 }
 
 
-/* =========================================================
-   STOP DEMO
-   ========================================================= */
+/* =========================================
+   STOP MOVEMENT
+   ========================================= */
 
 function stopDemoMovement() {
 
@@ -1967,13 +1615,15 @@ function stopDemoMovement() {
         );
 
         demoTimer = null;
+
     }
+
 }
 
 
-/* =========================================================
+/* =========================================
    DISTANCE
-   ========================================================= */
+   ========================================= */
 
 function distanceKm(
     lat1,
@@ -1998,8 +1648,7 @@ function distanceKm(
 
 
     const a =
-        Math.sin(dLat / 2) *
-        Math.sin(dLat / 2) +
+        Math.sin(dLat / 2) ** 2 +
 
         Math.cos(
             toRadians(lat1)
@@ -2009,8 +1658,7 @@ function distanceKm(
             toRadians(lat2)
         ) *
 
-        Math.sin(dLng / 2) *
-        Math.sin(dLng / 2);
+        Math.sin(dLng / 2) ** 2;
 
 
     const c =
@@ -2022,31 +1670,30 @@ function distanceKm(
 
 
     return radius * c;
+
 }
 
 
-/* =========================================================
+/* =========================================
    RADIANS
-   ========================================================= */
+   ========================================= */
 
 function toRadians(value) {
 
     return value *
         Math.PI /
         180;
+
 }
 
 
-/* =========================================================
+/* =========================================
    FORMAT DISTANCE
-   ========================================================= */
+   ========================================= */
 
 function formatDistance(km) {
 
-    if (
-        !Number.isFinite(km)
-    ) {
-
+    if (!Number.isFinite(km)) {
         return "—";
     }
 
@@ -2056,83 +1703,21 @@ function formatDistance(km) {
         return Math.round(
             km * 1000
         ) + " m";
+
     }
 
 
     return km.toFixed(1) +
         " km";
+
 }
 
 
-/* =========================================================
-   FORMAT TIME
-   ========================================================= */
-
-function formatUpdatedTime(
-    timestamp
-) {
-
-    if (!timestamp) {
-        return "unknown";
-    }
-
-
-    const seconds =
-        Math.max(
-            0,
-            Math.floor(
-                (
-                    Date.now() -
-                    timestamp
-                ) / 1000
-            )
-        );
-
-
-    if (seconds < 5) {
-
-        return "just now";
-    }
-
-
-    if (seconds < 60) {
-
-        return seconds +
-            "s ago";
-    }
-
-
-    const minutes =
-        Math.floor(
-            seconds / 60
-        );
-
-
-    if (minutes < 60) {
-
-        return minutes +
-            "m ago";
-    }
-
-
-    const hours =
-        Math.floor(
-            minutes / 60
-        );
-
-
-    return hours +
-        "h ago";
-}
-
-
-/* =========================================================
+/* =========================================
    LOCATION MESSAGE
-   ========================================================= */
+   ========================================= */
 
-function showLocationMessage(
-    message
-) {
+function showLocationMessage(message) {
 
     const element =
         document.getElementById(
@@ -2144,13 +1729,15 @@ function showLocationMessage(
 
         element.textContent =
             message;
+
     }
+
 }
 
 
-/* =========================================================
+/* =========================================
    MAP OVERLAY
-   ========================================================= */
+   ========================================= */
 
 function hideMapOverlay() {
 
@@ -2165,47 +1752,40 @@ function hideMapOverlay() {
         overlay.classList.add(
             "hidden"
         );
+
     }
+
 }
 
 
-/* =========================================================
+/* =========================================
    ESCAPE HTML
-   ========================================================= */
+   ========================================= */
 
 function escapeHtml(value) {
 
     return String(value)
-        .replaceAll(
-            "&",
-            "&amp;"
-        )
-        .replaceAll(
-            "<",
-            "&lt;"
-        )
-        .replaceAll(
-            ">",
-            "&gt;"
-        )
-        .replaceAll(
-            '"',
-            "&quot;"
-        )
-        .replaceAll(
-            "'",
-            "&#039;"
-        );
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+
 }
 
 
-/* =========================================================
+/* =========================================
    SERVICE WORKER
-   ========================================================= */
+   ========================================= */
 
-if (
-    "serviceWorker" in navigator
-) {
+function registerServiceWorker() {
+
+    if (
+        !"serviceWorker" in navigator
+    ) {
+        return;
+    }
+
 
     window.addEventListener(
         "load",
@@ -2213,27 +1793,24 @@ if (
 
             navigator.serviceWorker
                 .register("./sw.js")
-                .then(
-                    function (registration) {
+                .then(function (registration) {
 
-                        console.log(
-                            "Service Worker registered:",
-                            registration.scope
-                        );
+                    console.log(
+                        "Service Worker registered:",
+                        registration.scope
+                    );
 
-                    }
-                )
-                .catch(
-                    function (error) {
+                })
+                .catch(function (error) {
 
-                        console.warn(
-                            "Service Worker error:",
-                            error
-                        );
+                    console.warn(
+                        "Service Worker error:",
+                        error
+                    );
 
-                    }
-                );
+                });
 
         }
     );
+
 }
