@@ -1,849 +1,199 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BusRadar PH</title>
+    <meta name="description" content="BusRadar PH - Find nearby buses and view their last-known locations.">
+    <meta name="theme-color" content="#0b1220">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
 
-    <meta
-        name="description"
-        content="BusRadar PH - Find nearby buses and view their last-known locations."
-    >
+    <!-- Leaflet 1.9.4 - official integrity hash -->
+    <link rel="stylesheet"
+          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin="">
 
-    <meta
-        name="theme-color"
-        content="#0b1220"
-    >
-
-    <link
-        rel="manifest"
-        href="manifest.json"
-    >
-
-    <link
-        rel="icon"
-        type="image/svg+xml"
-        href="icon.svg"
-    >
-
-
-    <!-- ================= LEAFLET CSS ================= -->
-
-    <link
-        rel="stylesheet"
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIINfQ3b3lZ4h4Ff5H5zQ6Lh5M5Q5Q5Q5Q5="
-        crossorigin=""
-    >
-
-
-    <!-- ================= APP CSS ================= -->
-
-    <link
-        rel="stylesheet"
-        href="style.css"
-    >
-
+    <link rel="stylesheet" href="style.css">
 </head>
-
-
 <body>
 
+<header class="topbar">
+    <div class="brand">
+        <div class="brand-icon">🚌</div>
+        <div>
+            <h1>BusRadar <span>PH</span></h1>
+            <p>Public Bus Tracker</p>
+        </div>
+    </div>
 
-    <!-- =====================================================
-         HEADER
-    ====================================================== -->
+    <div class="connection-status" id="connectionStatus">
+        <span class="status-dot"></span>
+        <span id="connectionText">Checking...</span>
+    </div>
+</header>
 
-    <header class="topbar">
+<main class="container">
 
-        <div class="brand">
+    <section class="hero">
+        <div class="hero-text">
+            <span class="eyebrow">📍 NEARBY BUS TRACKING</span>
+            <h2>Find buses<br><span>around you.</span></h2>
+            <p>View nearby public buses, their operators, direction, speed, and last-known location.</p>
 
-            <div class="brand-icon">
-                🚌
+            <div class="hero-buttons">
+                <button class="primary-btn" id="locationBtn" type="button">📍 Use My Location</button>
+                <button class="secondary-btn" id="refreshBtn" type="button">↻ Refresh</button>
             </div>
 
+            <p class="location-message" id="locationMessage">Location has not been selected yet.</p>
+        </div>
+
+        <div class="hero-card">
+            <div class="radar-circle">
+                <div class="radar-ring ring-1"></div>
+                <div class="radar-ring ring-2"></div>
+                <div class="radar-ring ring-3"></div>
+                <div class="radar-center">📍</div>
+                <div class="radar-bus bus-1">🚌</div>
+                <div class="radar-bus bus-2">🚌</div>
+                <div class="radar-bus bus-3">🚌</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="filter-section">
+        <div class="section-heading">
             <div>
-
-                <h1>
-                    BusRadar <span>PH</span>
-                </h1>
-
-                <p>
-                    Public Bus Tracker
-                </p>
-
+                <span class="section-label">BUS OPERATORS</span>
+                <h3>Choose an operator</h3>
             </div>
-
+            <span class="bus-count" id="busCount">0 buses</span>
         </div>
 
-
-        <div
-            class="connection-status"
-            id="connectionStatus"
-        >
-
-            <span class="status-dot"></span>
-
-            <span id="connectionText">
-                Checking...
-            </span>
-
+        <div class="operator-filters">
+            <button class="operator-btn active" data-operator="ALL" type="button"><span class="operator-logo all">ALL</span>All</button>
+            <button class="operator-btn" data-operator="VICTORY" type="button"><span class="operator-logo victory">V</span>Victory</button>
+            <button class="operator-btn" data-operator="PARTAS" type="button"><span class="operator-logo partas">P</span>Partas</button>
+            <button class="operator-btn" data-operator="PITCO" type="button"><span class="operator-logo pitco">P</span>PITCO</button>
+            <button class="operator-btn" data-operator="LUPA" type="button"><span class="operator-logo lupa">L</span>Lupa</button>
         </div>
+    </section>
 
-    </header>
-
-
-
-    <!-- =====================================================
-         MAIN
-    ====================================================== -->
-
-    <main class="container">
-
-
-        <!-- =================================================
-             HERO
-        ================================================== -->
-
-        <section class="hero">
-
-
-            <div class="hero-text">
-
-                <span class="eyebrow">
-                    📍 NEARBY BUS TRACKING
-                </span>
-
-
-                <h2>
-
-                    Find buses<br>
-
-                    <span>
-                        around you.
-                    </span>
-
-                </h2>
-
-
-                <p>
-                    View nearby public buses, their operators,
-                    direction, speed, and last-known location.
-                </p>
-
-
-                <div class="hero-buttons">
-
-
-                    <button
-                        class="primary-btn"
-                        id="locationBtn"
-                        type="button"
-                    >
-
-                        📍 Use My Location
-
-                    </button>
-
-
-                    <button
-                        class="secondary-btn"
-                        id="refreshBtn"
-                        type="button"
-                    >
-
-                        ↻ Refresh
-
-                    </button>
-
-
-                </div>
-
-
-                <p
-                    class="location-message"
-                    id="locationMessage"
-                >
-                    Location has not been selected yet.
-                </p>
-
-            </div>
-
-
-
-            <!-- HERO RADAR -->
-
-            <div class="hero-card">
-
-                <div class="radar-circle">
-
-
-                    <div
-                        class="radar-ring ring-1"
-                    ></div>
-
-
-                    <div
-                        class="radar-ring ring-2"
-                    ></div>
-
-
-                    <div
-                        class="radar-ring ring-3"
-                    ></div>
-
-
-                    <div class="radar-center">
-                        📍
-                    </div>
-
-
-                    <div class="radar-bus bus-1">
-                        🚌
-                    </div>
-
-
-                    <div class="radar-bus bus-2">
-                        🚌
-                    </div>
-
-
-                    <div class="radar-bus bus-3">
-                        🚌
-                    </div>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-
-        <!-- =================================================
-             OPERATOR FILTER
-        ================================================== -->
-
-        <section class="filter-section">
-
-
-            <div class="section-heading">
-
-
-                <div>
-
-                    <span class="section-label">
-                        BUS OPERATORS
-                    </span>
-
-
-                    <h3>
-                        Choose an operator
-                    </h3>
-
-                </div>
-
-
-                <span
-                    class="bus-count"
-                    id="busCount"
-                >
-                    0 buses
-                </span>
-
-
-            </div>
-
-
-
-            <div class="operator-filters">
-
-
-                <!-- ALL -->
-
-                <button
-                    class="operator-btn active"
-                    data-operator="ALL"
-                    type="button"
-                >
-
-                    <span class="operator-logo all">
-                        ALL
-                    </span>
-
-                    All
-
-                </button>
-
-
-
-                <!-- VICTORY -->
-
-                <button
-                    class="operator-btn"
-                    data-operator="VICTORY"
-                    type="button"
-                >
-
-                    <span class="operator-logo victory">
-                        V
-                    </span>
-
-                    Victory
-
-                </button>
-
-
-
-                <!-- PARTAS -->
-
-                <button
-                    class="operator-btn"
-                    data-operator="PARTAS"
-                    type="button"
-                >
-
-                    <span class="operator-logo partas">
-                        P
-                    </span>
-
-                    Partas
-
-                </button>
-
-
-
-                <!-- PITCO -->
-
-                <button
-                    class="operator-btn"
-                    data-operator="PITCO"
-                    type="button"
-                >
-
-                    <span class="operator-logo pitco">
-                        P
-                    </span>
-
-                    PITCO
-
-                </button>
-
-
-
-                <!-- LUPA -->
-
-                <button
-                    class="operator-btn"
-                    data-operator="LUPA"
-                    type="button"
-                >
-
-                    <span class="operator-logo lupa">
-                        L
-                    </span>
-
-                    Lupa
-
-                </button>
-
-
-            </div>
-
-        </section>
-
-
-
-        <!-- =================================================
-             MAP
-        ================================================== -->
-
-        <section class="map-section">
-
-
-            <div class="section-heading">
-
-
-                <div>
-
-                    <span class="section-label">
-                        LIVE MAP
-                    </span>
-
-
-                    <h3>
-                        Bus locations
-                    </h3>
-
-                </div>
-
-
-                <div class="map-actions">
-
-
-                    <button
-                        id="centerLocationBtn"
-                        class="small-btn"
-                        type="button"
-                    >
-
-                        📍 Center
-
-                    </button>
-
-
-                </div>
-
-            </div>
-
-
-
-            <!-- MAP CARD -->
-
-            <div class="map-card">
-
-
-                <div id="map"></div>
-
-
-                <!-- MAP OVERLAY -->
-
-                <div
-                    class="map-overlay"
-                    id="mapOverlay"
-                >
-
-                    <div class="overlay-icon">
-                        📡
-                    </div>
-
-
-                    <h4>
-                        Waiting for location
-                    </h4>
-
-
-                    <p>
-                        Use the location button to center
-                        the map around you.
-                    </p>
-
-
-                    <button
-                        id="overlayLocationBtn"
-                        class="primary-btn"
-                        type="button"
-                    >
-
-                        📍 Use My Location
-
-                    </button>
-
-                </div>
-
-
-                <!-- MAP LEGEND -->
-
-                <div class="map-legend">
-
-
-                    <div class="legend-item">
-
-                        <span class="legend-dot live"></span>
-
-                        <span>
-                            Bus
-                        </span>
-
-                    </div>
-
-
-                    <div class="legend-item">
-
-                        <span class="legend-dot demo"></span>
-
-                        <span>
-                            Demo
-                        </span>
-
-                    </div>
-
-
-                    <div class="legend-item">
-
-                        <span class="legend-dot user"></span>
-
-                        <span>
-                            You
-                        </span>
-
-                    </div>
-
-
-                </div>
-
-
-            </div>
-
-        </section>
-
-
-
-        <!-- =================================================
-             NEARBY BUS LIST
-        ================================================== -->
-
-        <section class="nearby-section">
-
-
-            <div class="section-heading">
-
-
-                <div>
-
-                    <span class="section-label">
-                        NEARBY BUSES
-                    </span>
-
-
-                    <h3>
-                        Available buses
-                    </h3>
-
-                </div>
-
-
-                <div class="list-controls">
-
-
-                    <label for="sortSelect">
-                        Sort:
-                    </label>
-
-
-                    <select
-                        id="sortSelect"
-                        class="sort-select"
-                    >
-
-                        <option value="distance">
-                            Nearest first
-                        </option>
-
-
-                        <option value="operator">
-                            Operator
-                        </option>
-
-
-                        <option value="speed">
-                            Speed
-                        </option>
-
-                    </select>
-
-
-                </div>
-
-            </div>
-
-
-
-            <!-- BUS LIST -->
-
-            <div
-                id="busList"
-                class="bus-list"
-            >
-
-                <div class="empty-state">
-
-                    <div class="empty-icon">
-                        🚌
-                    </div>
-
-
-                    <h4>
-                        No buses to display
-                    </h4>
-
-
-                    <p>
-                        Bus information will appear here
-                        when available.
-                    </p>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-
-        <!-- =================================================
-             DATA STATUS
-        ================================================== -->
-
-        <section class="data-status-card">
-
-
-            <div class="data-status-icon">
-                📡
-            </div>
-
-
-            <div class="data-status-content">
-
-
-                <h3 id="dataStatusTitle">
-                    Demo tracking mode
-                </h3>
-
-
-                <p id="dataStatusText">
-                    The buses currently shown use simulated
-                    positions for development and testing.
-                </p>
-
-
-            </div>
-
-
-            <div
-                class="data-status-badge"
-                id="dataBadge"
-            >
-                DEMO
-            </div>
-
-
-        </section>
-
-
-
-        <!-- =================================================
-             HOW IT WORKS
-        ================================================== -->
-
-        <section class="info-section">
-
-
-            <div class="section-heading">
-
-
-                <div>
-
-                    <span class="section-label">
-                        INFORMATION
-                    </span>
-
-
-                    <h3>
-                        How BusRadar PH works
-                    </h3>
-
-                </div>
-
-
-            </div>
-
-
-
-            <div class="info-grid">
-
-
-                <!-- STEP 1 -->
-
-                <article class="info-card">
-
-
-                    <div class="info-number">
-                        01
-                    </div>
-
-
-                    <div class="info-icon">
-                        📍
-                    </div>
-
-
-                    <h4>
-                        Find your location
-                    </h4>
-
-
-                    <p>
-                        Allow the app to use your device
-                        location to calculate nearby buses.
-                    </p>
-
-
-                </article>
-
-
-
-                <!-- STEP 2 -->
-
-                <article class="info-card">
-
-
-                    <div class="info-number">
-                        02
-                    </div>
-
-
-                    <div class="info-icon">
-                        🚌
-                    </div>
-
-
-                    <h4>
-                        View buses
-                    </h4>
-
-
-                    <p>
-                        See available buses from different
-                        public transport operators on the map.
-                    </p>
-
-
-                </article>
-
-
-
-                <!-- STEP 3 -->
-
-                <article class="info-card">
-
-
-                    <div class="info-number">
-                        03
-                    </div>
-
-
-                    <div class="info-icon">
-                        📡
-                    </div>
-
-
-                    <h4>
-                        Track updates
-                    </h4>
-
-
-                    <p>
-                        Cached positions can remain available
-                        when the device temporarily goes offline.
-                    </p>
-
-
-                </article>
-
-
-            </div>
-
-        </section>
-
-
-
-        <!-- =================================================
-             NOTICE
-        ================================================== -->
-
-        <section class="notice">
-
-
-            <div class="notice-icon">
-                ⚠️
-            </div>
-
-
+    <section class="map-section">
+        <div class="section-heading">
             <div>
-
-
-                <strong>
-                    Tracking data notice
-                </strong>
-
-
-                <p>
-                    This development version uses simulated bus
-                    coordinates. Real-time public bus locations
-                    require an authorized GPS data source or API
-                    from the transport operator.
-                </p>
-
-
+                <span class="section-label">LIVE MAP</span>
+                <h3>Bus locations</h3>
             </div>
-
-
-        </section>
-
-
-    </main>
-
-
-
-    <!-- =====================================================
-         FOOTER
-    ====================================================== -->
-
-    <footer class="footer">
-
-
-        <div class="footer-brand">
-
-            🚌
-
-            <strong>
-                BusRadar PH
-            </strong>
-
+            <div class="map-actions">
+                <button id="centerLocationBtn" class="small-btn" type="button">📍 Center</button>
+            </div>
         </div>
 
+        <div class="map-card">
+            <div id="map"></div>
 
-        <p>
-            Public bus tracking prototype
-        </p>
+            <div class="map-overlay hidden" id="mapOverlay">
+                <div class="map-overlay-content">
+                    <div class="overlay-icon">📡</div>
+                    <h4>Waiting for location</h4>
+                    <p>Use the location button to center the map around you.</p>
+                    <button id="overlayLocationBtn" class="primary-btn" type="button">📍 Use My Location</button>
+                </div>
+            </div>
 
+            <div class="map-legend">
+                <div class="legend-item"><span class="legend-dot live"></span><span>Bus</span></div>
+                <div class="legend-item"><span class="legend-dot demo"></span><span>Demo</span></div>
+                <div class="legend-item"><span class="legend-dot user"></span><span>You</span></div>
+            </div>
+        </div>
+    </section>
 
-        <p class="footer-small">
-            Built for development and educational use.
-        </p>
+    <section class="nearby-section">
+        <div class="section-heading">
+            <div>
+                <span class="section-label">NEARBY BUSES</span>
+                <h3>Available buses</h3>
+            </div>
+            <div class="list-controls">
+                <label for="sortSelect">Sort:</label>
+                <select id="sortSelect" class="sort-select">
+                    <option value="distance">Nearest first</option>
+                    <option value="operator">Operator</option>
+                    <option value="speed">Speed</option>
+                </select>
+            </div>
+        </div>
 
+        <div id="busList" class="bus-list">
+            <div class="empty-state">
+                <div class="empty-icon">🚌</div>
+                <h4>No buses to display</h4>
+                <p>Bus information will appear here when available.</p>
+            </div>
+        </div>
+    </section>
 
-    </footer>
+    <section class="data-status-card">
+        <div class="data-status-icon">📡</div>
+        <div class="data-status-content">
+            <h3 id="dataStatusTitle">Demo tracking mode</h3>
+            <p id="dataStatusText">The buses currently shown use simulated positions for development and testing.</p>
+        </div>
+        <div class="data-status-badge" id="dataBadge">DEMO</div>
+    </section>
 
+    <section class="info-section">
+        <div class="section-heading">
+            <div>
+                <span class="section-label">INFORMATION</span>
+                <h3>How BusRadar PH works</h3>
+            </div>
+        </div>
 
+        <div class="info-grid">
+            <article class="info-card">
+                <div class="info-number">01</div>
+                <div class="info-icon">📍</div>
+                <h4>Find your location</h4>
+                <p>Allow the app to use your device location to calculate nearby buses.</p>
+            </article>
+            <article class="info-card">
+                <div class="info-number">02</div>
+                <div class="info-icon">🚌</div>
+                <h4>View buses</h4>
+                <p>See available buses from different public transport operators on the map.</p>
+            </article>
+            <article class="info-card">
+                <div class="info-number">03</div>
+                <div class="info-icon">📡</div>
+                <h4>Track updates</h4>
+                <p>Cached positions can remain available when the device temporarily goes offline.</p>
+            </article>
+        </div>
+    </section>
 
-    <!-- =====================================================
-         LEAFLET JS
-    ====================================================== -->
+    <section class="notice">
+        <div class="notice-icon">⚠️</div>
+        <div>
+            <strong>Tracking data notice</strong>
+            <p>This development version uses simulated bus coordinates. Real-time public bus locations require an authorized GPS data source or API from the transport operator.</p>
+        </div>
+    </section>
+</main>
 
-    <script
-        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+<footer class="footer">
+    <div class="footer-brand">🚌 <strong>BusRadar PH</strong></div>
+    <p>Public bus tracking prototype</p>
+    <p class="footer-small">Built for development and educational use.</p>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-        crossorigin=""
-    ></script>
-
-
-
-    <!-- =====================================================
-         APP JS
-    ====================================================== -->
-
-    <script src="app.js"></script>
-
-
+        crossorigin=""></script>
+<script src="app.js"></script>
 </body>
-
 </html>
