@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="theme-color" content="#2563eb">
+
+    <title>Student Bus Tracker</title>
+
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Leaflet -->
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header class="topbar">
+
+    <div class="brand">
+        <div class="brand-icon">🚍</div>
+
+        <div>
+            <h1>Student Bus Tracker</h1>
+            <p>School Transportation</p>
+        </div>
+    </div>
+
+    <div class="connection">
+        <span id="connectionDot"></span>
+        <span id="connectionText">Checking...</span>
+    </div>
+
+</header>
+
+
+<main class="container">
+
+    <!-- Welcome -->
+    <section class="welcome">
+
+        <div>
+            <span class="badge">STUDENT PORTAL</span>
+
+            <h2>Track your school bus</h2>
+
+            <p>
+                See the bus location, next stop, and estimated arrival time.
+            </p>
+        </div>
+
+    </section>
+
+
+    <!-- Bus selection -->
+
+    <section class="bus-selector">
+
+        <label for="busSelect">Select Bus</label>
+
+        <select id="busSelect">
+            <option value="BUS-01">Bus 01</option>
+            <option value="BUS-02">Bus 02</option>
+        </select>
+
+    </section>
+
+
+    <!-- Main grid -->
+
+    <section class="dashboard-grid">
+
+        <!-- Map -->
+
+        <div class="card map-card">
+
+            <div class="card-header">
+
+                <div>
+                    <h3>Live Bus Location</h3>
+                    <p id="mapStatus">
+                        Waiting for bus information...
+                    </p>
+                </div>
+
+                <span id="busStatus" class="status active">
+                    ON THE WAY
+                </span>
+
+            </div>
+
+            <div id="map"></div>
+
+        </div>
+
+
+        <!-- Bus information -->
+
+        <div class="card information-card">
+
+            <h3>Bus Information</h3>
+
+            <div class="bus-number">
+
+                <div class="bus-big-icon">
+                    🚍
+                </div>
+
+                <div>
+                    <span>BUS NUMBER</span>
+                    <strong id="busNumber">
+                        BUS-01
+                    </strong>
+                </div>
+
+            </div>
+
+
+            <div class="info-list">
+
+                <div class="info-item">
+
+                    <span class="info-icon">📍</span>
+
+                    <div>
+                        <small>Current Location</small>
+                        <strong id="currentLocation">
+                            Loading...
+                        </strong>
+                    </div>
+
+                </div>
+
+
+                <div class="info-item">
+
+                    <span class="info-icon">🚏</span>
+
+                    <div>
+                        <small>Next Stop</small>
+                        <strong id="nextStop">
+                            Loading...
+                        </strong>
+                    </div>
+
+                </div>
+
+
+                <div class="info-item">
+
+                    <span class="info-icon">⏱️</span>
+
+                    <div>
+                        <small>Estimated Arrival</small>
+                        <strong id="arrivalTime">
+                            -- min
+                        </strong>
+                    </div>
+
+                </div>
+
+
+                <div class="info-item">
+
+                    <span class="info-icon">🔄</span>
+
+                    <div>
+                        <small>Last Updated</small>
+                        <strong id="lastUpdated">
+                            --
+                        </strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- Stops -->
+
+    <section class="card stops-card">
+
+        <div class="card-header">
+
+            <div>
+                <h3>Bus Stops</h3>
+                <p>Your route stops</p>
+            </div>
+
+        </div>
+
+        <div id="stopsList" class="stops-list"></div>
+
+    </section>
+
+
+    <!-- Offline notice -->
+
+    <div id="offlineNotice" class="offline-notice">
+
+        <span>📡</span>
+
+        <div>
+            <strong>You are offline</strong>
+
+            <p>
+                Showing the last known bus location and saved route data.
+            </p>
+        </div>
+
+    </div>
+
+</main>
+
+
+<footer>
+
+    <p>
+        Student Bus Tracker • Version 1.0
+    </p>
+
+    <p>
+        Demo GPS Simulation
+    </p>
+
+</footer>
+
+
+<!-- Leaflet JS -->
+
+<script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+</script>
+
+<script src="app.js"></script>
+
+</body>
+</html>

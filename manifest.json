@@ -1,0 +1,11 @@
+{
+    "name": "Student Bus Tracker",
+    "short_name": "Bus Tracker",
+    "description": "Offline-first school bus tracking application for students.",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#f4f7fb",
+    "theme_color": "#2563eb",
+    "orientation": "portrait",
+    "icons": []
+}
