@@ -1,11 +1,17 @@
 {
-    "name": "Student Bus Tracker",
-    "short_name": "Bus Tracker",
-    "description": "Offline-first school bus tracking application for students.",
-    "start_url": "./index.html",
-    "display": "standalone",
-    "background_color": "#f4f7fb",
-    "theme_color": "#2563eb",
-    "orientation": "portrait",
-    "icons": []
+  "name": "BusRadar PH",
+  "short_name": "BusRadar",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#07101f",
+  "theme_color": "#0b1220",
+  "description": "Offline-first nearby bus tracking prototype.",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
 }

@@ -1,541 +1,2000 @@
-/*
-    STUDENT BUS TRACKER
-    VERSION 1
+"use strict";
 
-    Demo GPS simulation
-*/
+/* =========================================================
+   BUSRADAR PH
+   ========================================================= */
+
+const STORAGE_KEY = "busradar_ph_bus_positions";
+const LOCATION_KEY = "busradar_ph_user_location";
+const API_URL = "/api/buses";
+
+const DEFAULT_CENTER = [15.4800, 120.5950];
+const DEFAULT_ZOOM = 13;
+const UPDATE_INTERVAL = 5000;
 
 
-// ================================
-// BUS DATA
-// ================================
+/* =========================================================
+   APP STATE
+   ========================================================= */
 
-const buses = {
+let map = null;
+let buses = [];
+let userLocation = null;
+let userMarker = null;
 
-    "BUS-01": {
+let busMarkers = {};
 
-        number: "BUS-01",
+let selectedOperator = "ALL";
+let sortMode = "distance";
 
-        route: "Main Campus Route",
+let demoTimer = null;
+let isUsingRealData = false;
 
-        stops: [
 
-            {
-                name: "Main Campus",
-                lat: 15.4800,
-                lng: 120.5900
-            },
+/* =========================================================
+   DEMO BUS DATA
+   ========================================================= */
 
-            {
-                name: "City Hall",
-                lat: 15.4825,
-                lng: 120.5935
-            },
-
-            {
-                name: "Public Market",
-                lat: 15.4850,
-                lng: 120.5970
-            },
-
-            {
-                name: "Central Terminal",
-                lat: 15.4880,
-                lng: 120.6010
-            },
-
-            {
-                name: "North Gate",
-                lat: 15.4920,
-                lng: 120.6040
-            }
-
-        ],
-
-        position: 0
-
+const DEMO_BUSES = [
+    {
+        id: "VIC-101",
+        operator: "VICTORY",
+        operatorName: "Victory Liner",
+        route: "Tarlac → Manila",
+        direction: "Southbound",
+        lat: 15.4820,
+        lng: 120.5960,
+        speed: 42,
+        updatedAt: Date.now(),
+        demo: true
     },
 
-
-    "BUS-02": {
-
-        number: "BUS-02",
-
-        route: "East Campus Route",
-
-        stops: [
-
-            {
-                name: "East Gate",
-                lat: 15.4750,
-                lng: 120.5850
-            },
-
-            {
-                name: "Barangay Hall",
-                lat: 15.4780,
-                lng: 120.5890
-            },
-
-            {
-                name: "University Road",
-                lat: 15.4810,
-                lng: 120.5940
-            },
-
-            {
-                name: "Student Village",
-                lat: 15.4850,
-                lng: 120.5980
-            },
-
-            {
-                name: "East Terminal",
-                lat: 15.4890,
-                lng: 120.6020
-            }
-
-        ],
-
-        position: 0
-
-    }
-
-};
-
-
-// ================================
-// VARIABLES
-// ================================
-
-let selectedBus = "BUS-01";
-
-let busMarker;
-
-let routeLine;
-
-let stopMarkers = [];
-
-let simulationTimer;
-
-let busPosition = 0;
-
-
-// ================================
-// MAP
-// ================================
-
-const map = L.map("map").setView(
-    [15.4800, 120.5900],
-    14
-);
-
-
-L.tileLayer(
-    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
     {
-        attribution:
-            '&copy; OpenStreetMap contributors',
+        id: "PAR-204",
+        operator: "PARTAS",
+        operatorName: "Partas",
+        route: "Tarlac → Baguio",
+        direction: "Northbound",
+        lat: 15.4700,
+        lng: 120.6030,
+        speed: 38,
+        updatedAt: Date.now(),
+        demo: true
+    },
 
-        maxZoom: 19
+    {
+        id: "PIT-033",
+        operator: "PITCO",
+        operatorName: "PITCO",
+        route: "Tarlac → Pangasinan",
+        direction: "Northbound",
+        lat: 15.4755,
+        lng: 120.5900,
+        speed: 35,
+        updatedAt: Date.now(),
+        demo: true
+    },
+
+    {
+        id: "LUP-008",
+        operator: "LUPA",
+        operatorName: "Lupa Bus",
+        route: "Tarlac Local Route",
+        direction: "Eastbound",
+        lat: 15.4880,
+        lng: 120.6010,
+        speed: 30,
+        updatedAt: Date.now(),
+        demo: true
     }
-).addTo(map);
+];
 
 
-// ================================
-// BUS ICON
-// ================================
+/* =========================================================
+   INITIALIZE
+   ========================================================= */
 
-const busIcon = L.divIcon({
+document.addEventListener("DOMContentLoaded", function () {
 
-    className: "custom-bus-icon",
+    console.log("BusRadar PH starting...");
 
-    html: `
-        <div style="
-            width:42px;
-            height:42px;
-            background:#2563eb;
-            border:4px solid white;
-            border-radius:50%;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            font-size:21px;
-            box-shadow:0 4px 12px rgba(0,0,0,.25);
-        ">
-            🚍
-        </div>
-    `,
+    setupButtons();
 
-    iconSize: [42, 42],
+    loadLocation();
 
-    iconAnchor: [21, 21]
+    loadBuses();
+
+    updateConnectionStatus();
+
+    initMap();
+
+    renderAll();
+
+    startDemoMovement();
+
+    tryRealApi();
 
 });
 
 
-// ================================
-// LOAD BUS
-// ================================
+/* =========================================================
+   BUTTON SETUP
+   ========================================================= */
 
-function loadBus(busId) {
+function setupButtons() {
 
-    selectedBus = busId;
+    /*
+       OPERATOR BUTTONS
+    */
 
-    const bus = buses[busId];
+    const operatorButtons =
+        document.querySelectorAll(".operator-btn");
 
-    document.getElementById("busNumber")
-        .textContent = bus.number;
-
-
-    // Reset position from local storage if available
-
-    const savedPosition =
-        localStorage.getItem(
-            `busPosition_${busId}`
-        );
-
-    if (savedPosition !== null) {
-
-        busPosition =
-            parseFloat(savedPosition);
-
-    } else {
-
-        busPosition = 0;
-
-    }
+    console.log(
+        "Operator buttons found:",
+        operatorButtons.length
+    );
 
 
-    bus.position = busPosition;
+    operatorButtons.forEach(function (button) {
+
+        button.addEventListener("click", function () {
+
+            const operator =
+                this.getAttribute("data-operator");
+
+            console.log(
+                "Operator selected:",
+                operator
+            );
 
 
-    drawRoute(bus);
-
-    updateBus(bus);
-
-    renderStops(bus);
-
-}
+            if (!operator) {
+                return;
+            }
 
 
-// ================================
-// DRAW ROUTE
-// ================================
-
-function drawRoute(bus) {
-
-    // Remove previous route
-
-    if (routeLine) {
-
-        map.removeLayer(routeLine);
-
-    }
+            selectedOperator = operator;
 
 
-    // Remove old stop markers
+            /*
+               Remove active from ALL buttons
+            */
 
-    stopMarkers.forEach(marker => {
+            operatorButtons.forEach(function (btn) {
 
-        map.removeLayer(marker);
+                btn.classList.remove("active");
+
+            });
+
+
+            /*
+               Add active to clicked button
+            */
+
+            this.classList.add("active");
+
+
+            /*
+               Re-render
+            */
+
+            renderMap();
+
+            renderList();
+
+            updateBusCount();
+
+        });
 
     });
 
-    stopMarkers = [];
+
+    /*
+       LOCATION BUTTON
+    */
+
+    const locationButton =
+        document.getElementById("locationBtn");
+
+    if (locationButton) {
+
+        locationButton.addEventListener(
+            "click",
+            locateUser
+        );
+
+    }
 
 
-    const route = bus.stops.map(stop => [
+    /*
+       OVERLAY LOCATION BUTTON
+    */
 
-        stop.lat,
+    const overlayButton =
+        document.getElementById(
+            "overlayLocationBtn"
+        );
 
-        stop.lng
+    if (overlayButton) {
 
-    ]);
+        overlayButton.addEventListener(
+            "click",
+            locateUser
+        );
+
+    }
 
 
-    routeLine = L.polyline(
-        route,
+    /*
+       CENTER BUTTON
+    */
+
+    const centerButton =
+        document.getElementById(
+            "centerLocationBtn"
+        );
+
+    if (centerButton) {
+
+        centerButton.addEventListener(
+            "click",
+            centerOnUser
+        );
+
+    }
+
+
+    /*
+       REFRESH BUTTON
+    */
+
+    const refreshButton =
+        document.getElementById(
+            "refreshBtn"
+        );
+
+    if (refreshButton) {
+
+        refreshButton.addEventListener(
+            "click",
+            refreshBuses
+        );
+
+    }
+
+
+    /*
+       SORT SELECT
+    */
+
+    const sortSelect =
+        document.getElementById(
+            "sortSelect"
+        );
+
+    if (sortSelect) {
+
+        sortSelect.addEventListener(
+            "change",
+            function () {
+
+                sortMode =
+                    this.value;
+
+                renderList();
+
+            }
+        );
+
+    }
+
+
+    /*
+       ONLINE / OFFLINE
+    */
+
+    window.addEventListener(
+        "online",
+        updateConnectionStatus
+    );
+
+    window.addEventListener(
+        "offline",
+        updateConnectionStatus
+    );
+}
+
+
+/* =========================================================
+   CONNECTION STATUS
+   ========================================================= */
+
+function updateConnectionStatus() {
+
+    const status =
+        document.getElementById(
+            "connectionStatus"
+        );
+
+    const text =
+        document.getElementById(
+            "connectionText"
+        );
+
+
+    if (!status || !text) {
+        return;
+    }
+
+
+    if (navigator.onLine) {
+
+        status.classList.remove(
+            "offline"
+        );
+
+        status.classList.add(
+            "online"
+        );
+
+        text.textContent =
+            "Online";
+
+    } else {
+
+        status.classList.remove(
+            "online"
+        );
+
+        status.classList.add(
+            "offline"
+        );
+
+        text.textContent =
+            "Offline";
+    }
+}
+
+
+/* =========================================================
+   MAP
+   ========================================================= */
+
+function initMap() {
+
+    if (
+        typeof L === "undefined"
+    ) {
+
+        console.error(
+            "Leaflet was not loaded."
+        );
+
+        return;
+    }
+
+
+    const mapElement =
+        document.getElementById(
+            "map"
+        );
+
+
+    if (!mapElement) {
+        return;
+    }
+
+
+    map =
+        L.map("map").setView(
+            DEFAULT_CENTER,
+            DEFAULT_ZOOM
+        );
+
+
+    L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
         {
-            weight: 5,
-            opacity: .75
+            maxZoom: 19,
+
+            attribution:
+                '&copy; OpenStreetMap contributors'
         }
     ).addTo(map);
+}
 
 
-    // Add stops
+/* =========================================================
+   LOAD BUSES
+   ========================================================= */
 
-    bus.stops.forEach((stop, index) => {
+function loadBuses() {
 
-        const marker = L.marker(
+    try {
 
-            [stop.lat, stop.lng]
-
-        ).addTo(map);
-
-
-        marker.bindPopup(`
-
-            <strong>${stop.name}</strong>
-
-            <br>
-
-            Bus Stop ${index + 1}
-
-        `);
+        const saved =
+            localStorage.getItem(
+                STORAGE_KEY
+            );
 
 
-        stopMarkers.push(marker);
+        if (saved) {
+
+            const parsed =
+                JSON.parse(saved);
+
+
+            if (
+                Array.isArray(parsed) &&
+                parsed.length > 0
+            ) {
+
+                buses = parsed;
+
+                return;
+            }
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "Error loading buses:",
+            error
+        );
+
+    }
+
+
+    buses =
+        cloneDemoBuses();
+
+
+    saveBuses();
+}
+
+
+/* =========================================================
+   SAVE BUSES
+   ========================================================= */
+
+function saveBuses() {
+
+    try {
+
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(buses)
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Error saving buses:",
+            error
+        );
+    }
+}
+
+
+/* =========================================================
+   CLONE DEMO BUSES
+   ========================================================= */
+
+function cloneDemoBuses() {
+
+    return DEMO_BUSES.map(function (bus) {
+
+        return {
+            ...bus,
+            updatedAt: Date.now()
+        };
 
     });
+}
 
 
-    map.fitBounds(
-        routeLine.getBounds(),
+/* =========================================================
+   LOCATION
+   ========================================================= */
+
+function loadLocation() {
+
+    try {
+
+        const saved =
+            localStorage.getItem(
+                LOCATION_KEY
+            );
+
+
+        if (!saved) {
+            return;
+        }
+
+
+        const parsed =
+            JSON.parse(saved);
+
+
+        if (
+            parsed &&
+            typeof parsed.lat === "number" &&
+            typeof parsed.lng === "number"
+        ) {
+
+            userLocation = parsed;
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Error loading location:",
+            error
+        );
+    }
+}
+
+
+/* =========================================================
+   LOCATE USER
+   ========================================================= */
+
+function locateUser() {
+
+    if (
+        !navigator.geolocation
+    ) {
+
+        showLocationMessage(
+            "Geolocation is not supported by your browser."
+        );
+
+        return;
+    }
+
+
+    const button =
+        document.getElementById(
+            "locationBtn"
+        );
+
+
+    if (button) {
+
+        button.disabled = true;
+
+        button.textContent =
+            "📍 Finding...";
+    }
+
+
+    showLocationMessage(
+        "Finding your location..."
+    );
+
+
+    navigator.geolocation.getCurrentPosition(
+
+        function (position) {
+
+            const latitude =
+                position.coords.latitude;
+
+            const longitude =
+                position.coords.longitude;
+
+            const accuracy =
+                position.coords.accuracy;
+
+
+            userLocation = {
+
+                lat: latitude,
+
+                lng: longitude,
+
+                accuracy: accuracy,
+
+                updatedAt: Date.now()
+            };
+
+
+            try {
+
+                localStorage.setItem(
+                    LOCATION_KEY,
+                    JSON.stringify(
+                        userLocation
+                    )
+                );
+
+            } catch (error) {
+
+                console.warn(
+                    "Could not save location."
+                );
+            }
+
+
+            renderUserMarker();
+
+            renderList();
+
+            updateBusCount();
+
+
+            if (map) {
+
+                map.setView(
+                    [
+                        latitude,
+                        longitude
+                    ],
+                    15
+                );
+
+            }
+
+
+            hideMapOverlay();
+
+
+            showLocationMessage(
+                "Location found • Accuracy ±" +
+                Math.round(accuracy) +
+                " m"
+            );
+
+
+            if (button) {
+
+                button.disabled = false;
+
+                button.textContent =
+                    "📍 Update My Location";
+            }
+
+        },
+
+        function (error) {
+
+            console.error(
+                "Location error:",
+                error
+            );
+
+
+            let message =
+                "Unable to get your location.";
+
+
+            if (error.code === 1) {
+
+                message =
+                    "Location permission was denied.";
+
+            } else if (error.code === 2) {
+
+                message =
+                    "Your location could not be determined.";
+
+            } else if (error.code === 3) {
+
+                message =
+                    "Location request timed out.";
+            }
+
+
+            showLocationMessage(
+                message
+            );
+
+
+            if (button) {
+
+                button.disabled = false;
+
+                button.textContent =
+                    "📍 Try Again";
+            }
+
+        },
+
         {
-            padding: [30, 30]
+            enableHighAccuracy: true,
+
+            timeout: 10000,
+
+            maximumAge: 30000
+        }
+
+    );
+}
+
+
+/* =========================================================
+   USER MARKER
+   ========================================================= */
+
+function renderUserMarker() {
+
+    if (
+        !map ||
+        !userLocation
+    ) {
+        return;
+    }
+
+
+    const icon =
+        L.divIcon({
+
+            className: "",
+
+            html:
+                '<div class="user-marker"></div>',
+
+            iconSize: [18, 18],
+
+            iconAnchor: [9, 9]
+        });
+
+
+    if (userMarker) {
+
+        userMarker.setLatLng(
+            [
+                userLocation.lat,
+                userLocation.lng
+            ]
+        );
+
+        userMarker.setIcon(icon);
+
+        return;
+    }
+
+
+    userMarker =
+        L.marker(
+            [
+                userLocation.lat,
+                userLocation.lng
+            ],
+            {
+                icon: icon,
+                zIndexOffset: 1000
+            }
+        )
+        .addTo(map)
+        .bindPopup(
+            "<strong>📍 Your Location</strong>"
+        );
+}
+
+
+/* =========================================================
+   CENTER USER
+   ========================================================= */
+
+function centerOnUser() {
+
+    if (!userLocation) {
+
+        locateUser();
+
+        return;
+    }
+
+
+    if (!map) {
+        return;
+    }
+
+
+    map.setView(
+        [
+            userLocation.lat,
+            userLocation.lng
+        ],
+        15,
+        {
+            animate: true
         }
     );
 
+
+    renderUserMarker();
 }
 
 
-// ================================
-// UPDATE BUS
-// ================================
+/* =========================================================
+   FILTER
+   ========================================================= */
 
-function updateBus(bus) {
+function getFilteredBuses() {
 
-    const position = getInterpolatedPosition(
-        bus.stops,
-        busPosition
+    if (
+        selectedOperator === "ALL"
+    ) {
+
+        return buses.slice();
+    }
+
+
+    return buses.filter(
+        function (bus) {
+
+            return (
+                bus.operator ===
+                selectedOperator
+            );
+
+        }
     );
+}
 
 
-    // Create marker
+/* =========================================================
+   SORT
+   ========================================================= */
 
-    if (!busMarker) {
+function getSortedBuses() {
 
-        busMarker = L.marker(
-            [position.lat, position.lng],
-            {
-                icon: busIcon
+    const list =
+        getFilteredBuses();
+
+
+    if (sortMode === "operator") {
+
+        return list.sort(
+            function (a, b) {
+
+                return (
+                    (
+                        a.operatorName ||
+                        a.operator ||
+                        ""
+                    )
+                    .localeCompare(
+                        b.operatorName ||
+                        b.operator ||
+                        ""
+                    )
+                );
+
             }
-        ).addTo(map);
-
-    } else {
-
-        busMarker.setLatLng(
-            [position.lat, position.lng]
         );
-
     }
 
 
-    // Determine next stop
+    if (sortMode === "speed") {
 
-    const nextIndex =
-        Math.min(
-            Math.floor(busPosition) + 1,
-            bus.stops.length - 1
+        return list.sort(
+            function (a, b) {
+
+                return (
+                    Number(b.speed || 0) -
+                    Number(a.speed || 0)
+                );
+
+            }
         );
-
-
-    const nextStop =
-        bus.stops[nextIndex];
-
-
-    document.getElementById("currentLocation")
-        .textContent =
-        position.description;
-
-
-    document.getElementById("nextStop")
-        .textContent =
-        nextStop.name;
-
-
-    // Calculate arrival
-
-    const distance =
-        calculateDistance(
-            position.lat,
-            position.lng,
-            nextStop.lat,
-            nextStop.lng
-        );
-
-
-    const estimatedMinutes =
-        Math.max(
-            1,
-            Math.round(distance * 8)
-        );
-
-
-    document.getElementById("arrivalTime")
-        .textContent =
-        `${estimatedMinutes} min`;
-
-
-    const now = new Date();
-
-
-    document.getElementById("lastUpdated")
-        .textContent =
-        now.toLocaleTimeString();
-
-
-    document.getElementById("mapStatus")
-        .textContent =
-        `Heading toward ${nextStop.name}`;
-
-
-    // Save last known position
-
-    localStorage.setItem(
-
-        `busPosition_${selectedBus}`,
-
-        busPosition
-
-    );
-
-
-    localStorage.setItem(
-
-        `busLastUpdate_${selectedBus}`,
-
-        now.toISOString()
-
-    );
-
-
-    // Status
-
-    if (estimatedMinutes <= 2) {
-
-        document.getElementById("busStatus")
-            .textContent =
-            "NEAR STOP";
-
-        document.getElementById("busStatus")
-            .className =
-            "status near";
-
-    } else {
-
-        document.getElementById("busStatus")
-            .textContent =
-            "ON THE WAY";
-
-        document.getElementById("busStatus")
-            .className =
-            "status active";
-
     }
 
 
-    renderStops(bus);
+    if (sortMode === "distance") {
 
+        if (!userLocation) {
+            return list;
+        }
+
+
+        return list.sort(
+            function (a, b) {
+
+                const distanceA =
+                    distanceKm(
+                        userLocation.lat,
+                        userLocation.lng,
+                        a.lat,
+                        a.lng
+                    );
+
+
+                const distanceB =
+                    distanceKm(
+                        userLocation.lat,
+                        userLocation.lng,
+                        b.lat,
+                        b.lng
+                    );
+
+
+                return distanceA -
+                    distanceB;
+
+            }
+        );
+    }
+
+
+    return list;
 }
 
 
-// ================================
-// INTERPOLATE POSITION
-// ================================
+/* =========================================================
+   RENDER ALL
+   ========================================================= */
 
-function getInterpolatedPosition(
-    stops,
-    progress
+function renderAll() {
+
+    renderMap();
+
+    renderUserMarker();
+
+    renderList();
+
+    updateBusCount();
+}
+
+
+/* =========================================================
+   RENDER MAP
+   ========================================================= */
+
+function renderMap() {
+
+    if (!map) {
+        return;
+    }
+
+
+    const visibleBuses =
+        getFilteredBuses();
+
+
+    const visibleIds = {};
+
+
+    visibleBuses.forEach(
+        function (bus) {
+
+            visibleIds[bus.id] = true;
+
+
+            const icon =
+                createBusIcon(bus);
+
+
+            if (
+                busMarkers[bus.id]
+            ) {
+
+                busMarkers[
+                    bus.id
+                ].setLatLng(
+                    [
+                        bus.lat,
+                        bus.lng
+                    ]
+                );
+
+                busMarkers[
+                    bus.id
+                ].setIcon(icon);
+
+                busMarkers[
+                    bus.id
+                ].setPopupContent(
+                    createPopup(bus)
+                );
+
+            } else {
+
+                const marker =
+                    L.marker(
+                        [
+                            bus.lat,
+                            bus.lng
+                        ],
+                        {
+                            icon: icon
+                        }
+                    )
+                    .addTo(map);
+
+
+                marker.bindPopup(
+                    createPopup(bus)
+                );
+
+
+                marker.on(
+                    "click",
+                    function () {
+
+                        highlightBus(
+                            bus.id
+                        );
+
+                    }
+                );
+
+
+                busMarkers[
+                    bus.id
+                ] = marker;
+            }
+
+        }
+    );
+
+
+    /*
+       Remove markers that are
+       no longer visible
+    */
+
+    Object.keys(
+        busMarkers
+    ).forEach(
+        function (id) {
+
+            if (
+                !visibleIds[id]
+            ) {
+
+                map.removeLayer(
+                    busMarkers[id]
+                );
+
+                delete busMarkers[id];
+            }
+
+        }
+    );
+}
+
+
+/* =========================================================
+   BUS ICON
+   ========================================================= */
+
+function createBusIcon(bus) {
+
+    const className =
+        bus.demo
+            ? "bus-marker demo-marker"
+            : "bus-marker";
+
+
+    return L.divIcon({
+
+        className: "",
+
+        html:
+            '<div class="' +
+            className +
+            '">🚌</div>',
+
+        iconSize: [38, 38],
+
+        iconAnchor: [19, 19],
+
+        popupAnchor: [0, -20]
+    });
+}
+
+
+/* =========================================================
+   MAP POPUP
+   ========================================================= */
+
+function createPopup(bus) {
+
+    let distance =
+        "Location not set";
+
+
+    if (userLocation) {
+
+        distance =
+            formatDistance(
+                distanceKm(
+                    userLocation.lat,
+                    userLocation.lng,
+                    bus.lat,
+                    bus.lng
+                )
+            );
+    }
+
+
+    const mode =
+        bus.demo
+            ? "DEMO POSITION"
+            : "LIVE GPS";
+
+
+    return `
+        <div style="
+            min-width:200px;
+            font-family:Arial,sans-serif;
+        ">
+
+            <strong style="
+                font-size:15px;
+            ">
+                🚌 ${escapeHtml(bus.id)}
+            </strong>
+
+            <div style="
+                margin-top:5px;
+                color:#555;
+                font-size:12px;
+            ">
+                ${escapeHtml(
+                    bus.operatorName ||
+                    bus.operator
+                )}
+            </div>
+
+            <hr style="
+                border:0;
+                border-top:1px solid #ddd;
+                margin:9px 0;
+            ">
+
+            <div style="
+                font-size:12px;
+                margin-bottom:4px;
+            ">
+                <strong>Route:</strong>
+                ${escapeHtml(
+                    bus.route ||
+                    "Unknown"
+                )}
+            </div>
+
+            <div style="
+                font-size:12px;
+                margin-bottom:4px;
+            ">
+                <strong>Direction:</strong>
+                ${escapeHtml(
+                    bus.direction ||
+                    "Unknown"
+                )}
+            </div>
+
+            <div style="
+                font-size:12px;
+                margin-bottom:4px;
+            ">
+                <strong>Speed:</strong>
+                ${Number(
+                    bus.speed || 0
+                )} km/h
+            </div>
+
+            <div style="
+                font-size:12px;
+            ">
+                <strong>Distance:</strong>
+                ${distance}
+            </div>
+
+            <div style="
+                margin-top:8px;
+                font-size:10px;
+                font-weight:bold;
+            ">
+                ${mode}
+            </div>
+
+        </div>
+    `;
+}
+
+
+/* =========================================================
+   BUS LIST
+   ========================================================= */
+
+function renderList() {
+
+    if (!busList) {
+        return;
+    }
+
+
+    const list =
+        getSortedBuses();
+
+
+    if (list.length === 0) {
+
+        busList.innerHTML = `
+            <div class="empty-state">
+
+                <div class="empty-icon">
+                    🔎
+                </div>
+
+                <h4>
+                    No buses found
+                </h4>
+
+                <p>
+                    There are no buses available
+                    for this operator.
+                </p>
+
+            </div>
+        `;
+
+        return;
+    }
+
+
+    busList.innerHTML =
+        list.map(
+            function (bus, index) {
+
+                return createBusCard(
+                    bus,
+                    index
+                );
+
+            }
+        ).join("");
+
+
+    /*
+       Make cards clickable
+    */
+
+    document
+        .querySelectorAll(".bus-card")
+        .forEach(
+            function (card) {
+
+                card.addEventListener(
+                    "click",
+                    function () {
+
+                        focusBus(
+                            this.dataset.busId
+                        );
+
+                    }
+                );
+
+            }
+        );
+}
+
+
+/* =========================================================
+   BUS CARD
+   ========================================================= */
+
+function createBusCard(
+    bus,
+    index
 ) {
 
-    const max =
-        stops.length - 1;
+    let distance = "—";
 
 
-    if (progress >= max) {
+    if (userLocation) {
 
-        const finalStop =
-            stops[max];
+        distance =
+            formatDistance(
+                distanceKm(
+                    userLocation.lat,
+                    userLocation.lng,
+                    bus.lat,
+                    bus.lng
+                )
+            );
+    }
 
-        return {
 
-            lat: finalStop.lat,
+    const badge =
+        bus.demo
+            ? '<span class="demo-badge">DEMO</span>'
+            : '<span class="live-badge">LIVE</span>';
 
-            lng: finalStop.lng,
 
-            description:
-                finalStop.name
+    return `
+        <article
+            class="bus-card"
+            data-bus-id="${escapeHtml(bus.id)}"
+            style="animation-delay:${index * 0.04}s"
+        >
 
-        };
+            <div class="bus-card-top">
+
+                <div class="bus-main">
+
+                    <div class="bus-card-icon">
+                        🚌
+                    </div>
+
+                    <div>
+
+                        <h4>
+                            ${escapeHtml(
+                                bus.id
+                            )}
+                        </h4>
+
+                        <div class="bus-operator">
+                            ${escapeHtml(
+                                bus.operatorName ||
+                                bus.operator
+                            )}
+                        </div>
+
+                    </div>
+
+                </div>
+
+                ${badge}
+
+            </div>
+
+
+            <div class="bus-details">
+
+                <div class="detail-item">
+
+                    <span>
+                        Distance
+                    </span>
+
+                    <strong>
+                        ${distance}
+                    </strong>
+
+                </div>
+
+
+                <div class="detail-item">
+
+                    <span>
+                        Speed
+                    </span>
+
+                    <strong>
+                        ${Number(
+                            bus.speed || 0
+                        )} km/h
+                    </strong>
+
+                </div>
+
+
+                <div class="detail-item">
+
+                    <span>
+                        Direction
+                    </span>
+
+                    <strong>
+                        ${escapeHtml(
+                            bus.direction ||
+                            "—"
+                        )}
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div style="
+                margin-top:12px;
+                color:#70819a;
+                font-size:9px;
+            ">
+                📡 Updated
+                ${formatUpdatedTime(
+                    bus.updatedAt
+                )}
+            </div>
+
+        </article>
+    `;
+}
+
+
+/* =========================================================
+   FOCUS BUS
+   ========================================================= */
+
+function focusBus(id) {
+
+    const bus =
+        buses.find(
+            function (item) {
+
+                return item.id === id;
+
+            }
+        );
+
+
+    if (!bus || !map) {
+        return;
+    }
+
+
+    map.setView(
+        [
+            bus.lat,
+            bus.lng
+        ],
+        16,
+        {
+            animate: true
+        }
+    );
+
+
+    const marker =
+        busMarkers[id];
+
+
+    if (marker) {
+
+        setTimeout(
+            function () {
+
+                marker.openPopup();
+
+            },
+            250
+        );
+    }
+}
+
+
+/* =========================================================
+   HIGHLIGHT BUS
+   ========================================================= */
+
+function highlightBus(id) {
+
+    document
+        .querySelectorAll(".bus-card")
+        .forEach(
+            function (card) {
+
+                card.style.outline =
+                    "none";
+
+            }
+        );
+
+
+    const cards =
+        document.querySelectorAll(
+            ".bus-card"
+        );
+
+
+    cards.forEach(
+        function (card) {
+
+            if (
+                card.dataset.busId === id
+            ) {
+
+                card.style.outline =
+                    "2px solid rgba(49,136,255,.6)";
+
+            }
+
+        }
+    );
+}
+
+
+/* =========================================================
+   BUS COUNT
+   ========================================================= */
+
+function updateBusCount() {
+
+    const countElement =
+        document.getElementById(
+            "busCount"
+        );
+
+
+    if (!countElement) {
+        return;
+    }
+
+
+    const count =
+        getFilteredBuses().length;
+
+
+    countElement.textContent =
+        count +
+        (
+            count === 1
+                ? " bus"
+                : " buses"
+        );
+}
+
+
+/* =========================================================
+   REFRESH
+   ========================================================= */
+
+async function refreshBuses() {
+
+    const button =
+        document.getElementById(
+            "refreshBtn"
+        );
+
+
+    if (button) {
+
+        button.disabled = true;
+
+        button.textContent =
+            "↻ Updating...";
+    }
+
+
+    try {
+
+        const success =
+            await tryRealApi();
+
+
+        if (!success) {
+
+            renderAll();
+        }
+
+    } catch (error) {
+
+        console.error(
+            error
+        );
 
     }
 
 
-    const index =
-        Math.floor(progress);
+    if (button) {
 
+        button.disabled = false;
 
-    const fraction =
-        progress - index;
-
-
-    const current =
-        stops[index];
-
-
-    const next =
-        stops[index + 1];
-
-
-    const lat =
-        current.lat +
-        (next.lat - current.lat)
-        * fraction;
-
-
-    const lng =
-        current.lng +
-        (next.lng - current.lng)
-        * fraction;
-
-
-    return {
-
-        lat,
-
-        lng,
-
-        description:
-            `Between ${current.name} and ${next.name}`
-
-    };
-
+        button.textContent =
+            "↻ Refresh";
+    }
 }
 
 
-// ================================
-// DISTANCE
-// ================================
+/* =========================================================
+   REAL API
+   ========================================================= */
 
-function calculateDistance(
+async function tryRealApi() {
+
+    if (!navigator.onLine) {
+
+        setDataStatus(
+            "Offline mode",
+            "Using cached bus positions saved on this device.",
+            "CACHED"
+        );
+
+        return false;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                API_URL,
+                {
+                    method: "GET",
+
+                    headers: {
+                        "Accept":
+                            "application/json"
+                    },
+
+                    cache: "no-store"
+                }
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "API unavailable"
+            );
+        }
+
+
+        const data =
+            await response.json();
+
+
+        if (
+            !Array.isArray(data) ||
+            data.length === 0
+        ) {
+
+            throw new Error(
+                "No bus data"
+            );
+        }
+
+
+        buses =
+            normalizeApiData(data);
+
+
+        if (buses.length === 0) {
+
+            throw new Error(
+                "Invalid bus data"
+            );
+        }
+
+
+        isUsingRealData = true;
+
+
+        saveBuses();
+
+        renderAll();
+
+
+        setDataStatus(
+            "Live GPS data",
+            "Bus positions are coming from the configured API.",
+            "LIVE"
+        );
+
+
+        return true;
+
+    } catch (error) {
+
+        console.log(
+            "Real API unavailable. Demo mode active."
+        );
+
+
+        isUsingRealData = false;
+
+
+        setDataStatus(
+            "Demo tracking mode",
+            "The buses currently shown use simulated positions for development and testing.",
+            "DEMO"
+        );
+
+
+        return false;
+    }
+}
+
+
+/* =========================================================
+   NORMALIZE API DATA
+   ========================================================= */
+
+function normalizeApiData(data) {
+
+    return data
+        .map(
+            function (item) {
+
+                const lat =
+                    Number(item.lat);
+
+                const lng =
+                    Number(item.lng);
+
+
+                if (
+                    !Number.isFinite(lat) ||
+                    !Number.isFinite(lng)
+                ) {
+
+                    return null;
+                }
+
+
+                return {
+
+                    id:
+                        String(
+                            item.id ||
+                            "UNKNOWN"
+                        ),
+
+                    operator:
+                        String(
+                            item.operator ||
+                            "UNKNOWN"
+                        ).toUpperCase(),
+
+                    operatorName:
+                        String(
+                            item.operatorName ||
+                            item.operator ||
+                            "Unknown Operator"
+                        ),
+
+                    route:
+                        String(
+                            item.route ||
+                            "Unknown Route"
+                        ),
+
+                    direction:
+                        String(
+                            item.direction ||
+                            "Unknown"
+                        ),
+
+                    lat: lat,
+
+                    lng: lng,
+
+                    speed:
+                        Number(
+                            item.speed || 0
+                        ),
+
+                    updatedAt:
+                        Number(
+                            item.updatedAt ||
+                            Date.now()
+                        ),
+
+                    demo:
+                        item.demo === true
+                };
+
+            }
+        )
+        .filter(Boolean);
+}
+
+
+/* =========================================================
+   DATA STATUS
+   ========================================================= */
+
+function setDataStatus(
+    title,
+    message,
+    badge
+) {
+
+    const titleElement =
+        document.getElementById(
+            "dataStatusTitle"
+        );
+
+    const textElement =
+        document.getElementById(
+            "dataStatusText"
+        );
+
+    const badgeElement =
+        document.getElementById(
+            "dataBadge"
+        );
+
+
+    if (titleElement) {
+
+        titleElement.textContent =
+            title;
+    }
+
+
+    if (textElement) {
+
+        textElement.textContent =
+            message;
+    }
+
+
+    if (badgeElement) {
+
+        badgeElement.textContent =
+            badge;
+
+
+        if (badge === "LIVE") {
+
+            badgeElement.style.background =
+                "rgba(54,217,139,.1)";
+
+            badgeElement.style.color =
+                "#36d98b";
+
+        } else {
+
+            badgeElement.style.background =
+                "rgba(255,191,77,.1)";
+
+            badgeElement.style.color =
+                "#ffbf4d";
+        }
+    }
+}
+
+
+/* =========================================================
+   DEMO MOVEMENT
+   ========================================================= */
+
+function startDemoMovement() {
+
+    stopDemoMovement();
+
+
+    demoTimer =
+        setInterval(
+            function () {
+
+                if (isUsingRealData) {
+                    return;
+                }
+
+
+                if (!navigator.onLine) {
+                    return;
+                }
+
+
+                buses =
+                    buses.map(
+                        function (bus) {
+
+                            if (!bus.demo) {
+                                return bus;
+                            }
+
+
+                            const movement =
+                                0.00008;
+
+
+                            const latChange =
+                                (
+                                    Math.random() -
+                                    0.5
+                                ) *
+                                movement;
+
+
+                            const lngChange =
+                                (
+                                    Math.random() -
+                                    0.5
+                                ) *
+                                movement;
+
+
+                            const speedChange =
+                                (
+                                    Math.random() -
+                                    0.5
+                                ) *
+                                4;
+
+
+                            return {
+
+                                ...bus,
+
+                                lat:
+                                    bus.lat +
+                                    latChange,
+
+                                lng:
+                                    bus.lng +
+                                    lngChange,
+
+                                speed:
+                                    Math.max(
+                                        0,
+                                        Math.round(
+                                            bus.speed +
+                                            speedChange
+                                        )
+                                    ),
+
+                                updatedAt:
+                                    Date.now(),
+
+                                demo: true
+                            };
+
+                        }
+                    );
+
+
+                saveBuses();
+
+                renderMap();
+
+                renderList();
+
+                updateBusCount();
+
+            },
+
+            UPDATE_INTERVAL
+        );
+}
+
+
+/* =========================================================
+   STOP DEMO
+   ========================================================= */
+
+function stopDemoMovement() {
+
+    if (demoTimer) {
+
+        clearInterval(
+            demoTimer
+        );
+
+        demoTimer = null;
+    }
+}
+
+
+/* =========================================================
+   DISTANCE
+   ========================================================= */
+
+function distanceKm(
     lat1,
-    lon1,
+    lng1,
     lat2,
-    lon2
+    lng2
 ) {
 
-    const R = 6371;
+    const radius = 6371;
+
 
     const dLat =
-        (lat2 - lat1)
-        * Math.PI / 180;
+        toRadians(
+            lat2 - lat1
+        );
 
 
-    const dLon =
-        (lon2 - lon1)
-        * Math.PI / 180;
+    const dLng =
+        toRadians(
+            lng2 - lng1
+        );
 
 
     const a =
@@ -543,15 +2002,15 @@ function calculateDistance(
         Math.sin(dLat / 2) +
 
         Math.cos(
-            lat1 * Math.PI / 180
+            toRadians(lat1)
         ) *
 
         Math.cos(
-            lat2 * Math.PI / 180
+            toRadians(lat2)
         ) *
 
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
 
 
     const c =
@@ -562,268 +2021,219 @@ function calculateDistance(
         );
 
 
-    return R * c;
-
+    return radius * c;
 }
 
 
-// ================================
-// SIMULATION
-// ================================
+/* =========================================================
+   RADIANS
+   ========================================================= */
 
-function startSimulation() {
+function toRadians(value) {
 
-    clearInterval(simulationTimer);
-
-
-    simulationTimer =
-        setInterval(() => {
-
-            const bus =
-                buses[selectedBus];
-
-
-            busPosition += 0.025;
-
-
-            const maxPosition =
-                bus.stops.length - 1;
-
-
-            if (
-                busPosition >=
-                maxPosition
-            ) {
-
-                busPosition = 0;
-
-            }
-
-
-            bus.position =
-                busPosition;
-
-
-            updateBus(bus);
-
-
-        }, 2000);
-
+    return value *
+        Math.PI /
+        180;
 }
 
 
-// ================================
-// STOPS UI
-// ================================
+/* =========================================================
+   FORMAT DISTANCE
+   ========================================================= */
 
-function renderStops(bus) {
+function formatDistance(km) {
 
-    const container =
-        document.getElementById(
-            "stopsList"
-        );
+    if (
+        !Number.isFinite(km)
+    ) {
 
-
-    container.innerHTML = "";
-
-
-    const currentIndex =
-        Math.floor(busPosition);
+        return "—";
+    }
 
 
-    bus.stops.forEach(
-        (stop, index) => {
+    if (km < 1) {
 
-            let status =
-                "Upcoming";
-
-
-            if (
-                index < currentIndex
-            ) {
-
-                status = "Passed";
-
-            }
+        return Math.round(
+            km * 1000
+        ) + " m";
+    }
 
 
-            if (
-                index === currentIndex
-            ) {
-
-                status = "Current";
-
-            }
+    return km.toFixed(1) +
+        " km";
+}
 
 
-            const div =
-                document.createElement(
-                    "div"
-                );
+/* =========================================================
+   FORMAT TIME
+   ========================================================= */
+
+function formatUpdatedTime(
+    timestamp
+) {
+
+    if (!timestamp) {
+        return "unknown";
+    }
 
 
-            div.className =
-                "stop " +
+    const seconds =
+        Math.max(
+            0,
+            Math.floor(
                 (
-                    index === currentIndex
-                    ? "active-stop"
-                    : ""
-                );
+                    Date.now() -
+                    timestamp
+                ) / 1000
+            )
+        );
 
 
-            div.innerHTML = `
+    if (seconds < 5) {
 
-                <div class="stop-marker">
-                    ${index + 1}
-                </div>
-
-                <div>
-
-                    <div class="stop-name">
-                        ${stop.name}
-                    </div>
-
-                    <div class="stop-status">
-                        ${status}
-                    </div>
-
-                </div>
-
-            `;
+        return "just now";
+    }
 
 
-            container.appendChild(div);
+    if (seconds < 60) {
 
-        }
-    );
+        return seconds +
+            "s ago";
+    }
 
+
+    const minutes =
+        Math.floor(
+            seconds / 60
+        );
+
+
+    if (minutes < 60) {
+
+        return minutes +
+            "m ago";
+    }
+
+
+    const hours =
+        Math.floor(
+            minutes / 60
+        );
+
+
+    return hours +
+        "h ago";
 }
 
 
-// ================================
-// BUS SELECT
-// ================================
+/* =========================================================
+   LOCATION MESSAGE
+   ========================================================= */
 
-document.getElementById(
-    "busSelect"
-).addEventListener(
-    "change",
-    function () {
+function showLocationMessage(
+    message
+) {
 
-        loadBus(this.value);
+    const element =
+        document.getElementById(
+            "locationMessage"
+        );
 
+
+    if (element) {
+
+        element.textContent =
+            message;
     }
-);
-
-
-// ================================
-// ONLINE / OFFLINE
-// ================================
-
-function updateConnectionStatus() {
-
-    const dot =
-        document.getElementById(
-            "connectionDot"
-        );
-
-
-    const text =
-        document.getElementById(
-            "connectionText"
-        );
-
-
-    const notice =
-        document.getElementById(
-            "offlineNotice"
-        );
-
-
-    if (navigator.onLine) {
-
-        dot.style.background =
-            "#22c55e";
-
-        text.textContent =
-            "Online";
-
-        notice.classList.remove(
-            "show"
-        );
-
-    } else {
-
-        dot.style.background =
-            "#f97316";
-
-        text.textContent =
-            "Offline";
-
-        notice.classList.add(
-            "show"
-        );
-
-    }
-
 }
 
 
-window.addEventListener(
-    "online",
-    updateConnectionStatus
-);
+/* =========================================================
+   MAP OVERLAY
+   ========================================================= */
+
+function hideMapOverlay() {
+
+    const overlay =
+        document.getElementById(
+            "mapOverlay"
+        );
 
 
-window.addEventListener(
-    "offline",
-    updateConnectionStatus
-);
+    if (overlay) {
+
+        overlay.classList.add(
+            "hidden"
+        );
+    }
+}
 
 
-// ================================
-// SERVICE WORKER
-// ================================
+/* =========================================================
+   ESCAPE HTML
+   ========================================================= */
+
+function escapeHtml(value) {
+
+    return String(value)
+        .replaceAll(
+            "&",
+            "&amp;"
+        )
+        .replaceAll(
+            "<",
+            "&lt;"
+        )
+        .replaceAll(
+            ">",
+            "&gt;"
+        )
+        .replaceAll(
+            '"',
+            "&quot;"
+        )
+        .replaceAll(
+            "'",
+            "&#039;"
+        );
+}
+
+
+/* =========================================================
+   SERVICE WORKER
+   ========================================================= */
 
 if (
-    "serviceWorker"
-    in navigator
+    "serviceWorker" in navigator
 ) {
 
     window.addEventListener(
         "load",
-        () => {
+        function () {
 
             navigator.serviceWorker
-                .register("sw.js")
-                .then(() => {
+                .register("./sw.js")
+                .then(
+                    function (registration) {
 
-                    console.log(
-                        "Service Worker registered."
-                    );
+                        console.log(
+                            "Service Worker registered:",
+                            registration.scope
+                        );
 
-                })
-                .catch(error => {
+                    }
+                )
+                .catch(
+                    function (error) {
 
-                    console.error(
-                        "Service Worker error:",
-                        error
-                    );
+                        console.warn(
+                            "Service Worker error:",
+                            error
+                        );
 
-                });
+                    }
+                );
 
         }
     );
-
 }
-
-
-// ================================
-// START
-// ================================
-
-updateConnectionStatus();
-
-loadBus("BUS-01");
-
-startSimulation();
